@@ -56,7 +56,7 @@ class Network(object):
     def add_table(self, table):
         self._tables.append(table)
 
-    def marginalize(self, variable):
+    def marginalize(self, variable, normalize=True):
         """Marginalizes a variable out of the Bayesian network
 
         Removes a variable from the domain of the Bayesian network by summing
@@ -64,6 +64,8 @@ class Network(object):
 
         Args:
             variable (bayesian.Variable) : The variable to be removed.
+            normalize (optional, bool): Indicates if the resulting table 
+                should be normalized. Default is True.
 
         Returns:
             (bayesian.Network) : A new Bayesian network without the variable in
@@ -82,7 +84,7 @@ class Network(object):
         new_table = tables[0]
         for table in tables[1:]:
             new_table = new_table * table
-        new_table = new_table.marginalize(variable)
+        new_table = new_table.marginalize(variable, normalize)
 
         # Create a new BN.
         new_network = Network()
@@ -96,7 +98,7 @@ class Network(object):
 
         return new_network
 
-    def marginal(self, variable):
+    def marginal(self, variable, normalize=True):
         """Computes the marginal probability table of a variable
 
         Computes teh marginal probability table of a variable by marginalizing
@@ -105,6 +107,8 @@ class Network(object):
         Args:
             variable (bayesian.Variable) : The variable for which the marginal
                 probability is computed.
+            normalize (optional, bool): Indicates if the resulting table 
+                should be normalized. Default is True.
 
         Returns:
             (bayesian.Table) : The probability table of the variable.
@@ -116,7 +120,7 @@ class Network(object):
         domain = self.domain
         for domain_variable in domain:
             if variable != domain_variable:
-                network = network.marginalize(domain_variable)
+                network = network.marginalize(domain_variable, normalize)
 
         # Compute the product of the remaining tables.
         new_table = network._tables[0]
@@ -124,7 +128,8 @@ class Network(object):
             new_table = new_table * table
 
         # Normalize the table.
-        new_table.normalize()
+        if normalize:
+            new_table.normalize()
 
         return new_table
 
@@ -228,7 +233,7 @@ class Table(object):
         return output
 
 
-    def marginalize(self, variable):
+    def marginalize(self, variable, normalize=True):
         """Marginalizes a variable out of the bayesian.Table
 
         Removes a variable from the domain of the table by summing it out. The
@@ -236,6 +241,8 @@ class Table(object):
 
         Args:
             variable (bayesian.Variable) : The variable to be marginalized.
+            normalize (optional, bool): Indicates if the resulting table 
+                should be normalized. Default is True.
 
         Returns:
             (bayesian.Table) : A new table without the variable in its domain.
@@ -247,11 +254,15 @@ class Table(object):
 
         # Sum over the variable and remove it from the domain.
         new_values = np.sum(self._values, index)
-        new_values = new_values / np.sum(self._values)
         new_domain = list(self._domain)
         new_domain.pop(index) 
 
-        return Table(new_domain, new_values)
+        # Create the new table and normalize it if required.
+        new_table = Table(new_domain, new_values)
+        if normalize:
+            new_table.normalize()
+
+        return new_table
 
     def normalize(self):
         """Normalizes a bayesian.Table
