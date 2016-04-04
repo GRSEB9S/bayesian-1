@@ -13,7 +13,7 @@ class TestBayesianNetwork(unittest.TestCase):
         c = bayesian.Variable('c')
 
         # The test tables.
-        table_a = bayesian.Table([a], [0.15, 0.85])
+        table_a = bayesian.Table([a], [15, 85])
         table_ab = bayesian.Table([a, b], [[0.2, 0.8],[0.7, 0.3]])
         table_abc = bayesian.Table([a, b, c], [
             [[0.5, 0.5], [0.3, 0.7]],

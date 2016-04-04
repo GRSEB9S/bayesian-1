@@ -175,7 +175,7 @@ class Network(object):
                 marginals.extend(new_network.marginals(normalize))
             
         else:
-            marginals = [self.marginal(domain[0])] 
+            marginals = [self.marginal(domain[0], normalize)] 
 
         return marginals
             
