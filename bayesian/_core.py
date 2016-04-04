@@ -1,7 +1,7 @@
 import numpy as np
 
 class Network(object):
-    def __init__(self):
+    def __init__(self, network=None):
         """Bayesian network 
 
         The bayesian.Network class implement a Bayesian network. A valid
@@ -17,8 +17,15 @@ class Network(object):
         capture de same information. For the purpose of this package, a 
         Bayesian network is therefore a collection of tables.
 
+        Args:
+            network (optional, bayesian.Network) : When present, the new
+                network is a copy of the supplied network.
         """
-        self._tables = [] 
+
+        if network is None:
+            self._tables = [] 
+        else:
+            self._tables = list(network._tables)
     
     @property
     def domain(self):
