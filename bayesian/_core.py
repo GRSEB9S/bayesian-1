@@ -108,8 +108,10 @@ class Network(object):
     def marginal(self, variable, normalize=True):
         """Computes the marginal probability table of a variable
 
-        Computes teh marginal probability table of a variable by marginalizing
-        all other variables in the network.
+        Computes the marginal probability table of a variable by marginalizing
+        all other variables in the network. If you wish to compute the
+        marginal for all variables in the network, use the marginals method 
+        instead.
 
         Args:
             variable (bayesian.Variable) : The variable for which the marginal
@@ -140,6 +142,43 @@ class Network(object):
 
         return new_table
 
+    def marginals(self, normalize=True):
+        """ Computes the marginal probability for all variables
+
+        Computes the marginal probability tables for all variables in the
+        domain of the network. Using this method is significantly faster 
+        than using the marginal method repeatedly.
+
+        Args:
+            normalize (optional, bool): Indicates if the resulting tables
+                should be normalized. Default is True.
+        
+        Returns:
+            (list of bayesian.Table) : The marginal probability tables for all
+                variables in the network.
+
+        """
+
+        # If the domain more than one variable, recursively marginalize them.
+        domain = self.domain
+        nb_variables = len(domain)
+        if nb_variables > 1:
+        
+            marginals = []
+
+            # Marginalize the two halves of the domain separately.
+            halves = [domain[nb_variables//2:], domain[:nb_variables//2]]
+            for to_marginalize in halves:
+                new_network = Network(self) 
+                for variable in to_marginalize:
+                    new_network = new_network.marginalize(variable, normalize)
+                marginals.extend(new_network.marginals(normalize))
+            
+        else:
+            marginals = [self.marginal(domain[0])] 
+
+        return marginals
+            
 class Table(object):
     def __init__(self, domain, values=None):
         """Probability table in a Bayesian network
