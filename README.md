@@ -3,7 +3,7 @@ Python package to compute marginal distributions in Bayesian networks.
 
 ## Quickstart
 
-Here is a simple example take from [wikipedia](https://en.wikipedia.org/wiki/Bayesian_network) to get you started.
+Here is a simple example taken from [wikipedia](https://en.wikipedia.org/wiki/Bayesian_network) to get you started.
 We are interested in the probability that it rained, given that the grass is wet.
 First, we define the three variables of the model. The first variable indicates if the grass is wet, the second indicates if the sprinkler is on, and the third indicates if it is raining.
 
