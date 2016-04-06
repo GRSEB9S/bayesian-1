@@ -4,6 +4,44 @@ import bayesian
 class TestBayesianNetwork(unittest.TestCase):
     """Tests for the bayesian.Network class"""
 
+    def test_joint_domain(self):
+        """Test the joint_domain method"""
+
+        # Create the variables of the table.
+        a = bayesian.Variable('a')
+        b = bayesian.Variable('b')
+        c = bayesian.Variable('c')
+
+        # The test tables.
+        table_a = bayesian.Table([a], [15, 85])
+        table_ab = bayesian.Table([a, b], [[0.2, 0.8],[0.7, 0.3]])
+        table_abc = bayesian.Table([b, c],[[0.5, 0.5], [0.3, 0.7]])
+
+        # Create the network.
+        network = bayesian.Network()
+        network.add_table(table_a)
+        network.add_table(table_ab)
+        network.add_table(table_abc)
+
+        # The joint for a should contain a and b.
+        a_domain = network.joint_domain(a)
+        self.assertEqual(len(a_domain), 2)
+        self.assertEqual(a in a_domain, True)
+        self.assertEqual(b in a_domain, True)
+        
+        # The joint for b should contain a, b, and c.
+        b_domain = network.joint_domain(b)
+        self.assertEqual(len(b_domain), 3)
+        self.assertEqual(a in b_domain, True)
+        self.assertEqual(b in b_domain, True)
+        self.assertEqual(c in b_domain, True)
+
+        # The joint for c should contain b and c.
+        c_domain = network.joint_domain(c)
+        self.assertEqual(len(c_domain), 2)
+        self.assertEqual(b in c_domain, True)
+        self.assertEqual(c in c_domain, True)
+
     def test_marginals(self):
         """Test the marginals method"""
 

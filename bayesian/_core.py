@@ -51,7 +51,7 @@ class Network(object):
         return list(np.unique(domain))
 
     def __str__(self):
-        """String representation of the bayesian.Network """
+        """String representation of the bayesian.Network"""
 
         # Print every table of the network.
         output = ''
@@ -61,7 +61,36 @@ class Network(object):
         return output
 
     def add_table(self, table):
+        """Adds a probability table to the network"""
         self._tables.append(table)
+
+    def joint_domain(self, variable):
+        """Returns the domain of the joint table for a variable
+
+        The domain of the joint table is given by the union of the domains of 
+        the tables where the variable appears.
+
+        Args:
+            variable (bayesian.Variable) : The variable used to compute the
+                joint table.
+
+        Returns:
+            (list of bayesian.Variables) : The domain of the joint table.
+
+        """
+
+        # Find all tables with the variable in their domain.
+        tables = []
+        for table in self._tables:
+            if variable in table.domain:
+                tables.append(table) 
+
+        # Create a new network with the tables and get its domain.
+        network = Network()
+        network._tables = tables
+
+        return network.domain
+
 
     def marginalize(self, variable, normalize=True):
         """Marginalizes a variable out of the Bayesian network
