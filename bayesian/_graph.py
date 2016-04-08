@@ -14,6 +14,14 @@ class UndirectedGraph(object):
 
         self._nodes = set()
 
+    @property
+    def simplicial_node(self):
+        """Get a simplicial node"""
+        for node in self._nodes:
+            if node.is_simplicial:
+                return node
+        return None
+
     def add_node(self, node):
         """Adds a node to the undirected graph"""
         self._nodes.add(node)
@@ -23,7 +31,6 @@ class UndirectedGraph(object):
         nodes = list(self._nodes)
         data_list = [node.data for node in nodes]
         return nodes[data_list.index(data)]
-
 
 class Node(object):
     def __init__(self, data):

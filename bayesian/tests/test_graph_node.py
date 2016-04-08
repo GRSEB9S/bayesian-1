@@ -42,3 +42,6 @@ class TestNode(unittest.TestCase):
         # simplicial.
         node1.add_link(node3)
         self.assertTrue(node4.is_simplicial)
+
+if __name__ == '__main__':
+    unittest.main()
