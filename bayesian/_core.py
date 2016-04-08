@@ -1,4 +1,8 @@
+from itertools import combinations
+
 import numpy as np
+
+import bayesian._graph
 
 class Network(object):
     def __init__(self, network=None):
@@ -49,6 +53,32 @@ class Network(object):
             domain = np.concatenate((domain, table._domain))
 
         return list(np.unique(domain))
+
+    @property
+    def domain_graph(self):
+        """Get the domain graph of the Bayesian network
+
+        The domain graph of a Bayesian network is the undirected graph with 
+        the variables of the BN as nodes. There is a link between nodes that 
+        are members of the same domain of a probability table.
+
+        """
+
+        domain_graph = bayesian._graph.UndirectedGraph()
+
+        # Create a node for every variable in the network.
+        domain = self.domain
+        for variable in domain:
+            domain_graph.add_node(bayesian._graph.Node(variable))
+            
+        # Add the links between variables that are in the domain of the 
+        # same table.
+        for table in self._tables:
+            for v1, v2 in combinations(table.domain, 2):
+                node = domain_graph.get_node(v1)
+                node.add_link(domain_graph.get_node(v2))
+
+        return domain_graph
 
     def __str__(self):
         """String representation of the bayesian.Network"""
