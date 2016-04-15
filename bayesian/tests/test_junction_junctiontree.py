@@ -22,6 +22,16 @@ class TestGraphJunctionTree(unittest.TestCase):
             marginal = network.marginal(junction_tree_marginal.domain[0])
             self.assertAlmostEqual(junction_tree_marginal[0], marginal[0])
             self.assertAlmostEqual(junction_tree_marginal[1], marginal[1])
+       
+        # The results should also hold for unnormalized probabilities.
+        junction_tree = bayesian.JunctionTree(network, False)
+        junction_tree_marginals = junction_tree.marginals()
+        for junction_tree_marginal in junction_tree_marginals:
+            marginal = network.marginal(
+                junction_tree_marginal.domain[0],
+                False)
+            self.assertAlmostEqual(junction_tree_marginal[0], marginal[0])
+            self.assertAlmostEqual(junction_tree_marginal[1], marginal[1])
  
         # Computing the marginals using the junction tree should be faster.
         t0 = time.time()

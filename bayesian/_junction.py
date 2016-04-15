@@ -42,13 +42,18 @@ class Separator(object):
         self.downbound = None
 
 class JunctionTree(object):
-    def __init__(self, network):
+    def __init__(self, network, normalize=True):
         """Junction tree of a bayesian network
         
         Args:
             network (bayesian.Network) : The Bayesian network used to compute
                 the domain graph.
+            normalize (optional, bool): Indicates if the resulting junction
+                tree should be normalized. Default is True.
         """
+
+        # Indicates if the junction tree should be normalized.
+        self._normalize = normalize
 
         # The separators and buckets of the junction tree.
         self.separators = []
@@ -94,7 +99,9 @@ class JunctionTree(object):
                 to_remove = []
                 for variable in new_table.domain:
                     if variable not in separator.variables: 
-                        new_table = new_table.marginalize(variable)
+                        new_table = new_table.marginalize(
+                            variable,
+                            self._normalize)
                 
                 separator.upbound = new_table
 
@@ -125,7 +132,9 @@ class JunctionTree(object):
     
                 for variable in new_table.domain:
                     if variable not in separator.variables:
-                        new_table = new_table.marginalize(variable)
+                        new_table = new_table.marginalize(
+                            variable,
+                            self._normalize)
                 
                 separator.downbound = new_table
                 
@@ -157,7 +166,9 @@ class JunctionTree(object):
             # Marginalize all variables except the current objective.
             for bucket_variable in bucket.variables:
                 if bucket_variable is not variable:
-                    new_table = new_table.marginalize(bucket_variable)
+                    new_table = new_table.marginalize(
+                        bucket_variable,
+                        self._normalize)
             
             marginals.append(new_table)
 
@@ -179,8 +190,13 @@ class JunctionTree(object):
         done = False
         while not done:
 
-            # Find a simplicial node.
+            # Find a simplicial node if there is one. If not, make one
+            # by adding fillins.
             simplicial_node = graph_copy.simplicial_node
+            if simplicial_node is None:
+                simplicial_node = graph_copy.get_almost_simplicial()
+                simplicial_node.make_simplicial()
+
             family = simplicial_node.family
             bucket = Bucket(set([node.data for node in family]))
             self.buckets.append(bucket)
