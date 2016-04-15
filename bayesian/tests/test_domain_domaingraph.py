@@ -1,19 +1,21 @@
 import unittest
 
-import bayesian._graph
+import bayesian
+from bayesian._domain import Node
 
-class TestUndirectedGraph(unittest.TestCase):
+class TestDomainGraph(unittest.TestCase):
+    """Test the DomainGraph class"""
     
     def test_simplicial_node(self):
         """Test the simplicial_node property"""
 
-        node1 = bayesian._graph.Node('A')
-        node2 = bayesian._graph.Node('B')
-        node3 = bayesian._graph.Node('C')
-        node4 = bayesian._graph.Node('D')
-        node5 = bayesian._graph.Node('E')
+        node1 = Node('A')
+        node2 = Node('B')
+        node3 = Node('C')
+        node4 = Node('D')
+        node5 = Node('E')
 
-        graph = bayesian._graph.UndirectedGraph()
+        graph = bayesian.DomainGraph()
         graph.add_node(node1)
         graph.add_node(node2)
         graph.add_node(node3)
