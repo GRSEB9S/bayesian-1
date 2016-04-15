@@ -61,6 +61,16 @@ class DomainGraph(object):
         data_list = [node.data for node in nodes]
         return nodes[data_list.index(data)]
 
+    def get_almost_simplicial(self):
+        """Get the node that is closest to being simplicial"""
+        
+        selected = None
+        for node in self._nodes:
+            if selected is None or node.missing_links() < selected.missing_links():
+                selected = node
+
+        return node
+
     def remove_node(self, node_to_remove):
         """Removes a node from the graph"""
         self._nodes.discard(node_to_remove)
@@ -146,6 +156,29 @@ class Node(object):
         # Because the links are undirected, it is added to both nodes.
         self._links.add(node)
         node._links.add(self)
+       
+    def make_simplicial(self):
+        """Makes a node simplicial
+
+        Makes the node simplicial by adding links between its neighbors.
+
+        """
+        
+        # Add the missing links between neightbors.
+        for node, other_node in combinations(self._links, 2):
+            if node not in other_node.links:
+                node.add_link(other_node) 
+
+    def missing_links(self):
+        """Returns the number of missing links to make the node simplicial"""
+
+        # Count the number of missing links.
+        missing = 0
+        for node, other_node in combinations(self._links, 2):
+            if node not in other_node.links:
+                missing = missing + 1 
+
+        return missing
 
     def remove_link(self, node):
         """Removes a link between nodes"""
