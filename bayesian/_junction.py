@@ -68,14 +68,23 @@ class JunctionTree(object):
         self._build_from_graph(domain_graph)
 
         # Prepare to compute marginals.
-        self._collect_evidence()
-        self._distribute_evidence()
+        self.fill()
     
     @property
     def network(self):
         """Get the Bayesian network of the junction tree"""
         return self._network
     
+    def fill(self):
+        """Fills the junction tree
+        
+        Fills the junction tree by collecting and distributing evidence along
+        buckets and separators.
+
+        """
+        self._collect_evidence()
+        self._distribute_evidence()
+
     def _collect_evidence(self):
         """Collect the evidence to the root node"""
         
