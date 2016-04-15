@@ -104,7 +104,7 @@ class TestBayesianNetwork(unittest.TestCase):
         network.add_table(table_ac)
 
         # Get the domain graph of the network.
-        domain_graph = network.domain_graph
+        domain_graph = bayesian.DomainGraph(network)
 
         # There should be a link between a and b, a and c, but not between
         # b and c.
