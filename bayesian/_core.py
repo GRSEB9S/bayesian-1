@@ -64,7 +64,7 @@ class Network(object):
 
         """
 
-        domain_graph = bayesian._graph.UndirectedGraph()
+        domain_graph = bayesian._graph.UndirectedGraph(self)
 
         # Create a node for every variable in the network.
         domain = self.domain
@@ -93,6 +93,38 @@ class Network(object):
     def add_table(self, table):
         """Adds a probability table to the network"""
         self._tables.append(table)
+
+    def get_tables(self, variables=None):
+        """Get tables with variables in their domain
+
+        Returns a list of tables that have the specified variables in their 
+        domain. If the variables are not supplied, all tables are returned.
+
+        Args:
+            variables (optional, bayesian.Variable or list) : The variable or
+                list of variables that are in the domain of the returned 
+                tables.
+
+        Returns:
+            (list of bayesian.Table) : The tables that have the variables in 
+            their domain.
+
+        """
+
+        if variables is None:
+            return self._tables
+
+        if not hasattr(variables, '__iter__'):
+            variables = [variables]
+
+        # Find all tables with the variable in their domain.
+        tables = []
+        for variable in variables:
+            for table in self._tables:
+                if variable in table.domain and table not in tables:
+                    tables.append(table) 
+
+        return tables
 
     def joint_domain(self, variable):
         """Returns the domain of the joint table for a variable
