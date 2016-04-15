@@ -84,5 +84,36 @@ class TestBayesianNetwork(unittest.TestCase):
             self.assertAlmostEqual(individual_marginal[0], marginal[0])
             self.assertAlmostEqual(individual_marginal[1], marginal[1])
 
+    def test_domain_graph(self):
+        """Test the domain_graph property"""
+
+        # Create the variables of the table.
+        a = bayesian.Variable('a')
+        b = bayesian.Variable('b')
+        c = bayesian.Variable('c')
+
+        # The test tables.
+        table_a = bayesian.Table([a], [15, 85])
+        table_ab = bayesian.Table([a, b], [[0.2, 0.8], [0.7, 0.3]])
+        table_ac = bayesian.Table([a, c], [[0.5, 0.5], [0.3, 0.7]])
+
+        # Create the network.
+        network = bayesian.Network()
+        network.add_table(table_a)
+        network.add_table(table_ab)
+        network.add_table(table_ac)
+
+        # Get the domain graph of the network.
+        domain_graph = bayesian.DomainGraph(network)
+
+        # There should be a link between a and b, a and c, but not between
+        # b and c.
+        node_a = domain_graph.get_node(a)
+        node_b = domain_graph.get_node(b)
+        node_c = domain_graph.get_node(c)
+        self.assertTrue(node_b in node_a.links)
+        self.assertTrue(node_c in node_a.links)
+        self.assertFalse(node_b in node_c.links)
+        
 if __name__ == '__main__':
     unittest.main()
