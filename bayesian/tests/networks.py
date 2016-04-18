@@ -1,5 +1,51 @@
 import bayesian
 
+class CarStartProblem(bayesian.Network):
+    def __init__(self):
+        """Bayesian network implementing the car start problem
+    
+        This test is taken from page 35 of:
+
+        Jensen, Finn V. and Nielsen, Thomas D., Bayesian Network and Decision 
+        Graph, Springer New York, 2007.
+
+        """
+
+        bayesian.Network.__init__(self)
+
+        # fuel  : Does the car have fuel?
+        # meter : What does the fuel meter say?
+        # start : Does the car start?
+        # spark : Are the spark plugs clean?
+        fuel = bayesian.Variable('Fu')
+        meter = bayesian.Variable('Fm', 3)
+        start = bayesian.Variable('St')
+        spark = bayesian.Variable('Sp')
+
+        # It is very likely the car has fuel.
+        fuel_table = bayesian.Table([fuel], [0.02, 0.98])
+
+        # It is very likely the spark plug is clean.
+        spark_table = bayesian.Table([spark], [0.04, 0.96])
+
+        # The meter depends on the fuel.
+        meter_table = bayesian.Table([fuel, meter], [
+            [0.998, 0.001, 0.001], 
+            [0.01, 0.60, 0.39]
+        ])
+
+        # The car will start if there is fuel and the spark plug is 
+        # clean.
+        start_table = bayesian.Table([start, fuel, spark], [
+            [[1.0, 1.0], [0.99, 0.01]],
+            [[0.0, 0.0], [0.01, 0.99]]
+        ])
+
+        self.add_table(fuel_table)
+        self.add_table(spark_table)
+        self.add_table(meter_table)
+        self.add_table(start_table)
+
 class Pyramid(bayesian.Network):
     def __init__(self):
         """Pyramid Bayesian network used for tests
