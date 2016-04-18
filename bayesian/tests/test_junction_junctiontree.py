@@ -7,10 +7,21 @@ import bayesian.tests.networks
 class TestGraphJunctionTree(unittest.TestCase):
     """Test the JunctionTree class"""
 
-    def test_marginals(self):
+    def test_marignals(self):
         """Test the marginals method"""
+        
+        # Get the available test networks.
+        networks = [
+            bayesian.tests.networks.Pyramid(),
+            bayesian.tests.networks.CarStartProblem()
+        ]
 
-        network = bayesian.tests.networks.Pyramid()
+        # Test them one by one.
+        for network in networks:
+            self._test_marginals_network(network)
+
+    def _test_marginals_network(self, network):
+        """Test the marginals method using a test network"""
 
         # Compute the marginals using the junction tree.
         junction_tree = bayesian.JunctionTree(network)
