@@ -1,3 +1,5 @@
+import operator
+from functools import reduce
 from itertools import combinations
 
 import numpy as np
@@ -151,9 +153,7 @@ class Network(object):
         
         # Compute the product of all tables and marginalize the variable out
         # of the result.
-        new_table = tables[0]
-        for table in tables[1:]:
-            new_table = new_table * table
+        new_table = reduce(operator.mul, tables)
         new_table = new_table.marginalize(variable, normalize)
 
         # Create a new BN.
@@ -195,9 +195,7 @@ class Network(object):
                 network = network.marginalize(domain_variable, normalize)
 
         # Compute the product of the remaining tables.
-        new_table = network._tables[0]
-        for table in network._tables[1:]:
-            new_table = new_table * table
+        new_table = reduce(operator.mul, network._tables)
 
         # Normalize the table.
         if normalize:

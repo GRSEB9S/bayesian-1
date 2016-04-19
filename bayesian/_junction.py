@@ -1,4 +1,6 @@
+import operator
 from copy import copy
+from functools import reduce
 
 import bayesian
 
@@ -98,11 +100,9 @@ class JunctionTree(object):
                 for separator in bucket.separators:
                     tables.append(separator.upbound)
                 
-                # Compute the product of all tables and eliminate the variables
-                # that are not in the destination separator.
-                new_table = tables[0]
-                for table in tables[1:]:
-                    new_table = new_table * table
+                # Compute the product of all tables and eliminate the 
+                # variables that are not in the destination separator.
+                new_table = reduce(operator.mul, tables)
 
                 separator = bucket.out
                 to_remove = []
@@ -135,9 +135,7 @@ class JunctionTree(object):
                         tables.append(other_separator.upbound)
                 
                 # Compute the product of all tables.
-                new_table = tables[0]
-                for table in tables[1:]:
-                    new_table = new_table * table
+                new_table = reduce(operator.mul, tables)
     
                 for variable in new_table.domain:
                     if variable not in separator.variables:
@@ -168,9 +166,7 @@ class JunctionTree(object):
                 tables.append(separator.upbound)
             
             # Compute the product of all tables.
-            new_table = tables[0]
-            for table in tables[1:]:
-                new_table = new_table * table
+            new_table = reduce(operator.mul, tables)
 
             # Marginalize all variables except the current objective.
             for bucket_variable in bucket.variables:
