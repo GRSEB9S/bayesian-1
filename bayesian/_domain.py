@@ -5,33 +5,34 @@ import numpy as np
 
 import bayesian
 
+
 class DomainGraph(object):
     def __init__(self, network=None):
         """Domain graph of a bayesian network
 
         The DomainGraph class represents the domain graph of a Bayesian
         network. It is an undirected graph where nodes represent variables.
-        There is a link between two nodes if the are part ot the domain of the 
+        There is a link between two nodes if the are part ot the domain of the
         same table.
 
         Args:
             network (optional, bayesian.Network) : The Bayesian network used
                 to compute the domain graph.
         """
-        
-        self._nodes = set() 
+
+        self._nodes = set()
 
         # If the network is not provided, the domain graph is empty.
         if network is None:
             network = bayesian.Network()
-        self._network = network 
+        self._network = network
 
         # Initialize the domain graph using the provided network.
         self._build_from_network(network)
 
     def __copy__(self):
         """Shallow copy of a domain graph"""
-        
+
         # The deep copy does not duplicated the Bayesian network.
         shallow_copy = DomainGraph(self._network)
         shallow_copy._nodes = copy(self._nodes)
@@ -63,13 +64,13 @@ class DomainGraph(object):
 
     def get_almost_simplicial(self):
         """Get the node that is closest to being simplicial"""
-        
-        selected = None
+
+        selected = next(iter(self._nodes))
         for node in self._nodes:
-            if selected is None or node.missing_links() < selected.missing_links():
+            if node.missing_links() < selected.missing_links():
                 selected = node
 
-        return node
+        return selected
 
     def remove_node(self, node_to_remove):
         """Removes a node from the graph"""
@@ -85,19 +86,20 @@ class DomainGraph(object):
                 graph.
 
         """
-        
+
         # Create a node for every variable in the network.
         domain = network.domain
         for variable in domain:
             self.add_node(Node(variable))
-            
-        # Add the links between variables that are in the domain of the 
+
+        # Add the links between variables that are in the domain of the
         # same table.
         tables = network.get_tables()
         for table in tables:
             for v1, v2 in combinations(table.domain, 2):
                 node = self.get_node(v1)
                 node.add_link(self.get_node(v2))
+
 
 class Node(object):
     def __init__(self, data):
@@ -112,7 +114,7 @@ class Node(object):
         """
 
         self._data = data
-        self._links = set() 
+        self._links = set()
 
     @property
     def data(self):
@@ -125,7 +127,7 @@ class Node(object):
         nodes = [n for n in self.links]
         nodes.append(self)
         return set(nodes)
-    
+
     @property
     def is_simplicial(self):
         """Indicates if a node is simplicial
@@ -137,7 +139,7 @@ class Node(object):
             (bool) : True if the node is simplicial, False otherwise.
 
         """
-        
+
         # Verify if all the nodes are pairwise linked.
         for node, other_node in combinations(self._links, 2):
             if node not in other_node.links:
@@ -152,22 +154,22 @@ class Node(object):
 
     def add_link(self, node):
         """Add a link to a node"""
-        
+
         # Because the links are undirected, it is added to both nodes.
         self._links.add(node)
         node._links.add(self)
-       
+
     def make_simplicial(self):
         """Makes a node simplicial
 
         Makes the node simplicial by adding links between its neighbors.
 
         """
-        
+
         # Add the missing links between neightbors.
         for node, other_node in combinations(self._links, 2):
             if node not in other_node.links:
-                node.add_link(other_node) 
+                node.add_link(other_node)
 
     def missing_links(self):
         """Returns the number of missing links to make the node simplicial"""
@@ -176,7 +178,7 @@ class Node(object):
         missing = 0
         for node, other_node in combinations(self._links, 2):
             if node not in other_node.links:
-                missing = missing + 1 
+                missing = missing + 1
 
         return missing
 
