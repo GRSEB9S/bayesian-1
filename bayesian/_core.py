@@ -1,8 +1,11 @@
+# cython: profile=True
 import operator
 from functools import reduce
 from itertools import combinations
 
 import numpy as np
+cimport cython
+cimport numpy as np
 
 class Network(object):
     def __init__(self, network=None):
@@ -153,7 +156,7 @@ class Network(object):
         
         # Compute the product of all tables and marginalize the variable out
         # of the result.
-        new_table = reduce(operator.mul, tables)
+        new_table = reduce(Table.__mul__, tables)
         new_table = new_table.marginalize(variable, normalize)
 
         # Create a new BN.
@@ -195,7 +198,7 @@ class Network(object):
                 network = network.marginalize(domain_variable, normalize)
 
         # Compute the product of the remaining tables.
-        new_table = reduce(operator.mul, network._tables)
+        new_table = reduce(Table.__mul__, network._tables)
 
         # Normalize the table.
         if normalize:
@@ -299,19 +302,45 @@ class Table(object):
 
         """
 
-        # The domain of the resulting table is the union of the domains of the 
-        # multiplied table.
-        new_domain = np.concatenate((left._domain, right._domain))
-        new_domain = list(np.unique(new_domain))
+        # Order the variables.
+        left_set = set(left._domain)
+        right_set = set(right._domain)
+        intersection = list(left_set & right_set)
+        left_only = list(left_set - right_set)
+        right_only = list(right_set - left_set)
+        left_domain = left_only + intersection
+        right_domain = intersection + right_only
+        new_domain = list(left_only + intersection + right_only)
 
-        # Expand the tables so they have the same domain.
-        expanded_left = left._expand_domain(new_domain)
-        expanded_right = right._expand_domain(new_domain)
+        # Order the values.
+        permutation_order = np.zeros((len(left._domain)), dtype=int) 
+        for j, variable in enumerate(left._domain):
+            permutation_order[left_domain.index(variable)] = j
+        left_values = left._values.transpose(permutation_order)
+
+        permutation_order = np.zeros((len(right._domain)), dtype=int) 
+        for j, variable in enumerate(right._domain):
+            permutation_order[right_domain.index(variable)] = j
+        right_values = right._values.transpose(permutation_order)
        
-        # Multiply the table values.
-        new_values = expanded_left._values * expanded_right._values
+        left_divide = 1
+        for v in right_only:
+            left_divide *= v.nb_states
+        right_mod = 1
+        for v in right_domain:
+            right_mod *= v.nb_states
 
-        return Table(list(expanded_left._domain), new_values)
+        # Multiply the table values.
+        shape = np.array([v.nb_states for v in new_domain], dtype=np.int)
+        new_values = np.zeros(shape, dtype=np.float)
+        new_values_inline = new_values.ravel()
+        left_ravel = left_values.ravel()
+        right_ravel = right_values.ravel()
+        for i in range(new_values.size):
+            new_values_inline[i] = \
+                left_ravel[i//left_divide] * right_ravel[i % right_mod]
+
+        return Table(new_domain, new_values)
     
     def __str__(self):
         """String representation of a bayesian.Table"""
