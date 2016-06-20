@@ -4,8 +4,6 @@ from functools import reduce
 from itertools import combinations
 
 import numpy as np
-cimport cython
-cimport numpy as np
 
 class Network(object):
     def __init__(self, network=None):
