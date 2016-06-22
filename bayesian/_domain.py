@@ -72,6 +72,16 @@ class DomainGraph(object):
 
         return selected
 
+    def get_minimal_family(self):
+        """Get the node that has the smallest family in the graph"""
+
+        selected = next(iter(self._nodes))
+        for node in self._nodes:
+            if len(node.family) < len(selected.family):
+                selected = node
+
+        return selected
+
     def remove_node(self, node_to_remove):
         """Removes a node from the graph"""
         self._nodes.discard(node_to_remove)

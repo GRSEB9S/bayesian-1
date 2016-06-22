@@ -199,7 +199,7 @@ class JunctionTree(object):
             # by adding fillins.
             simplicial_node = graph_copy.simplicial_node
             if simplicial_node is None:
-                simplicial_node = graph_copy.get_almost_simplicial()
+                simplicial_node = graph_copy.get_minimal_family()
                 simplicial_node.make_simplicial()
 
             family = simplicial_node.family
