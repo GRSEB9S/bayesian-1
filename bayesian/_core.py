@@ -117,10 +117,7 @@ class Network(object):
         """
 
         # Find all tables with the variable in their domain.
-        tables = []
-        for table in self._tables:
-            if variable in table.domain:
-                tables.append(table) 
+        tables = self.get_tables(variable)
 
         # Create a new network with the tables and get its domain.
         network = Network()
