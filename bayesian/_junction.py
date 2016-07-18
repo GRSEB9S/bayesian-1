@@ -174,7 +174,10 @@ class JunctionTree(object):
                     new_table = new_table.marginalize(
                         bucket_variable,
                         self._normalize)
-            
+
+            if self._normalize:
+                new_table.normalize()
+
             marginals.append(new_table)
 
         return marginals
