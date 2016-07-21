@@ -4,32 +4,34 @@ from functools import reduce
 
 import bayesian
 
+
 class Bucket(object):
     def __init__(self, variables):
         """Bucket in a junction tree
-        
+
         Args:
             variables (set of bayesian.Variables) : The set of variables
                 contained in the bucket.
-                
+
         """
 
-        # The variables of the bucket. 
-        self.variables = variables 
+        # The variables of the bucket.
+        self.variables = variables
 
         # The separator above the bucket.
         self.out = None
 
         # The separators below the bucket.
         self.separators = []
-        
+
         # The probability tables of the bucket.
         self.tables = []
+
 
 class Separator(object):
     def __init__(self, variables):
         """Separator in a junction tree
-        
+
         Args:
             variables (set of bayesian.Variables) : The set of variables
                 contained in the bucket.
@@ -37,25 +39,22 @@ class Separator(object):
         """
 
         # The variables of the separator.
-        self.variables = variables 
+        self.variables = variables
 
         # The up/downbound messages.
-        self.upbound = None 
+        self.upbound = None
         self.downbound = None
 
+
 class JunctionTree(object):
-    def __init__(self, network, normalize=True):
+    def __init__(self, network):
         """Junction tree of a bayesian network
-        
+
         Args:
             network (bayesian.Network) : The Bayesian network used to compute
                 the domain graph.
-            normalize (optional, bool): Indicates if the resulting junction
-                tree should be normalized. Default is True.
-        """
 
-        # Indicates if the junction tree should be normalized.
-        self._normalize = normalize
+        """
 
         # The separators and buckets of the junction tree.
         self.separators = []
@@ -71,15 +70,15 @@ class JunctionTree(object):
 
         # Prepare to compute marginals.
         self.fill()
-    
+
     @property
     def network(self):
         """Get the Bayesian network of the junction tree"""
         return self._network
-    
+
     def fill(self):
         """Fills the junction tree
-        
+
         Fills the junction tree by collecting and distributing evidence along
         buckets and separators.
 
@@ -89,29 +88,27 @@ class JunctionTree(object):
 
     def _collect_evidence(self):
         """Collect the evidence to the root node"""
-        
+
         for bucket in self.buckets:
 
             if bucket.out is not None:
                 tables = list(bucket.tables)
 
-                # Collect the messages of the separators that are below the 
+                # Collect the messages of the separators that are below the
                 # the bucket.
                 for separator in bucket.separators:
                     tables.append(separator.upbound)
-                
-                # Compute the product of all tables and eliminate the 
+
+                # Compute the product of all tables and eliminate the
                 # variables that are not in the destination separator.
                 new_table = reduce(operator.mul, tables)
 
                 separator = bucket.out
                 to_remove = []
                 for variable in new_table.domain:
-                    if variable not in separator.variables: 
-                        new_table = new_table.marginalize(
-                            variable,
-                            self._normalize)
-                
+                    if variable not in separator.variables:
+                        new_table = new_table.marginalize(variable)
+
                 separator.upbound = new_table
 
     def _distribute_evidence(self):
@@ -133,21 +130,19 @@ class JunctionTree(object):
                 for other_separator in bucket.separators:
                     if other_separator is not separator:
                         tables.append(other_separator.upbound)
-                
+
                 # Compute the product of all tables.
                 new_table = reduce(operator.mul, tables)
-    
+
                 for variable in new_table.domain:
                     if variable not in separator.variables:
-                        new_table = new_table.marginalize(
-                            variable,
-                            self._normalize)
-                
+                        new_table = new_table.marginalize(variable)
+
                 separator.downbound = new_table
-                
+
     def marginals(self):
         """Compute all marginals"""
-       
+
         variables = self.network.domain
 
         marginals = []
@@ -164,24 +159,19 @@ class JunctionTree(object):
                 tables.append(bucket.out.downbound)
             for separator in bucket.separators:
                 tables.append(separator.upbound)
-            
+
             # Compute the product of all tables.
             new_table = reduce(operator.mul, tables)
 
             # Marginalize all variables except the current objective.
             for bucket_variable in bucket.variables:
                 if bucket_variable is not variable:
-                    new_table = new_table.marginalize(
-                        bucket_variable,
-                        self._normalize)
-
-            if self._normalize:
-                new_table.normalize()
+                    new_table = new_table.marginalize(bucket_variable)
 
             marginals.append(new_table)
 
         return marginals
-    
+
     def _build_from_graph(self, graph):
         """Get the junction tree of the graph"""
 
@@ -191,9 +181,9 @@ class JunctionTree(object):
         # The number of nodes removed is used as a bucket and separator
         # index.
         nb_nodes_removed = 0
-        
+
         # The list of used tables.
-        used_tables = set() 
+        used_tables = set()
 
         done = False
         while not done:
@@ -208,32 +198,32 @@ class JunctionTree(object):
             family = simplicial_node.family
             bucket = Bucket(set([node.data for node in family]))
             self.buckets.append(bucket)
-           
+
             if len(family) < len(graph_copy._nodes):
-                
+
                 # Find all nodes who have heighbors only in the family.
-                nodes_to_remove = set() 
-                nodes_to_keep = set() 
+                nodes_to_remove = set()
+                nodes_to_keep = set()
                 for node in family:
                     if node.family <= family:
                         nodes_to_remove.add(node)
                         nb_nodes_removed = nb_nodes_removed + 1
                     else:
                         nodes_to_keep.add(node)
-                
+
                 # Remove them from the graph.
                 for node in nodes_to_remove:
                     graph_copy.remove_node(node)
 
                 # The remaining nodes are part of a separator.
                 separator = Separator(set([n.data for n in nodes_to_keep]))
-                separator.index = nb_nodes_removed 
+                separator.index = nb_nodes_removed
                 separator.downward = bucket
                 bucket.out = separator
                 self.separators.append(separator)
-                
+
                 # Update the index of the bucket.
-                bucket.index = nb_nodes_removed 
+                bucket.index = nb_nodes_removed
             else:
                 nodes_to_remove = family
                 bucket.index = len(graph._nodes)

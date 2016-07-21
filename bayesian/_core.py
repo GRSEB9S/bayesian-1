@@ -5,9 +5,10 @@ from itertools import combinations
 
 import numpy as np
 
+
 class Network(object):
     def __init__(self, network=None):
-        """Bayesian network 
+        """Bayesian network
 
         The bayesian.Network class implement a Bayesian network. A valid
         Bayesian network is defined by:
@@ -18,8 +19,8 @@ class Network(object):
             - The variables and the edges must form an acyclic directed graph.
 
         In this package, edges and variables in the network are not defined
-        explicitly. They are instead described using probability tables which 
-        capture de same information. For the purpose of this package, a 
+        explicitly. They are instead described using probability tables which
+        capture de same information. For the purpose of this package, a
         Bayesian network is therefore a collection of tables.
 
         Args:
@@ -28,10 +29,10 @@ class Network(object):
         """
 
         if network is None:
-            self._tables = [] 
+            self._tables = []
         else:
             self._tables = list(network._tables)
-    
+
     @property
     def domain(self):
         """Get the domain of the Bayesian network
@@ -41,13 +42,13 @@ class Network(object):
         the graph of the network.
 
         Returns:
-            (list of bayesian.Variable) : All the variables in the graph of the 
-                network. Returns an empty list if there are no variables in the 
+            (list of bayesian.Variable) : All the variables in the graph of the
+                network. Returns an empty list if there are no variables in the
                 graph.
 
         """
 
-        # The domain of the network is the union of the domain of the tables 
+        # The domain of the network is the union of the domain of the tables
         # of the network.
         domain = []
         for table in self._tables:
@@ -72,16 +73,16 @@ class Network(object):
     def get_tables(self, variables=None):
         """Get tables with variables in their domain
 
-        Returns a list of tables that have the specified variables in their 
+        Returns a list of tables that have the specified variables in their
         domain. If the variables are not supplied, all tables are returned.
 
         Args:
             variables (optional, bayesian.Variable or list) : The variable or
-                list of variables that are in the domain of the returned 
+                list of variables that are in the domain of the returned
                 tables.
 
         Returns:
-            (list of bayesian.Table) : The tables that have the variables in 
+            (list of bayesian.Table) : The tables that have the variables in
             their domain.
 
         """
@@ -97,14 +98,14 @@ class Network(object):
         for variable in variables:
             for table in self._tables:
                 if variable in table.domain and table not in tables:
-                    tables.append(table) 
+                    tables.append(table)
 
         return tables
 
     def joint_domain(self, variable):
         """Returns the domain of the joint table for a variable
 
-        The domain of the joint table is given by the union of the domains of 
+        The domain of the joint table is given by the union of the domains of
         the tables where the variable appears.
 
         Args:
@@ -125,8 +126,7 @@ class Network(object):
 
         return network.domain
 
-
-    def marginalize(self, variable, normalize=True):
+    def marginalize(self, variable):
         """Marginalizes a variable out of the Bayesian network
 
         Removes a variable from the domain of the Bayesian network by summing
@@ -134,8 +134,6 @@ class Network(object):
 
         Args:
             variable (bayesian.Variable) : The variable to be removed.
-            normalize (optional, bool): Indicates if the resulting table 
-                should be normalized. Default is True.
 
         Returns:
             (bayesian.Network) : A new Bayesian network without the variable in
@@ -147,12 +145,12 @@ class Network(object):
         tables = []
         for table in self._tables:
             if variable in table.domain:
-                tables.append(table) 
-        
+                tables.append(table)
+
         # Compute the product of all tables and marginalize the variable out
         # of the result.
         new_table = reduce(Table.__mul__, tables)
-        new_table = new_table.marginalize(variable, normalize)
+        new_table = new_table.marginalize(variable)
 
         # Create a new BN.
         new_network = Network()
@@ -166,19 +164,17 @@ class Network(object):
 
         return new_network
 
-    def marginal(self, variable, normalize=True):
+    def marginal(self, variable):
         """Computes the marginal probability table of a variable
 
         Computes the marginal probability table of a variable by marginalizing
         all other variables in the network. If you wish to compute the
-        marginal for all variables in the network, use the marginals method 
+        marginal for all variables in the network, use the marginals method
         instead.
 
         Args:
             variable (bayesian.Variable) : The variable for which the marginal
                 probability is computed.
-            normalize (optional, bool): Indicates if the resulting table 
-                should be normalized. Default is True.
 
         Returns:
             (bayesian.Table) : The probability table of the variable.
@@ -190,28 +186,20 @@ class Network(object):
         domain = self.domain
         for domain_variable in domain:
             if variable != domain_variable:
-                network = network.marginalize(domain_variable, normalize)
+                network = network.marginalize(domain_variable)
 
         # Compute the product of the remaining tables.
         new_table = reduce(Table.__mul__, network._tables)
 
-        # Normalize the table.
-        if normalize:
-            new_table.normalize()
-
         return new_table
 
-    def marginals(self, normalize=True):
+    def marginals(self):
         """ Computes the marginal probability for all variables
 
         Computes the marginal probability tables for all variables in the
-        domain of the network. Using this method is significantly faster 
+        domain of the network. Using this method is significantly faster
         than using the marginal method repeatedly.
 
-        Args:
-            normalize (optional, bool): Indicates if the resulting tables
-                should be normalized. Default is True.
-        
         Returns:
             (list of bayesian.Table) : The marginal probability tables for all
                 variables in the network.
@@ -222,22 +210,23 @@ class Network(object):
         domain = self.domain
         nb_variables = len(domain)
         if nb_variables > 1:
-        
+
             marginals = []
 
             # Marginalize the two halves of the domain separately.
             halves = [domain[nb_variables//2:], domain[:nb_variables//2]]
             for to_marginalize in halves:
-                new_network = Network(self) 
+                new_network = Network(self)
                 for variable in to_marginalize:
-                    new_network = new_network.marginalize(variable, normalize)
-                marginals.extend(new_network.marginals(normalize))
-            
+                    new_network = new_network.marginalize(variable)
+                marginals.extend(new_network.marginals())
+
         else:
-            marginals = [self.marginal(domain[0], normalize)] 
+            marginals = [self.marginal(domain[0])]
 
         return marginals
-            
+
+
 class Table(object):
     def __init__(self, domain, values=None):
         """Probability table in a Bayesian network
@@ -250,20 +239,20 @@ class Table(object):
                 of the table.
             values (optional, np.array) : An array with a number of dimensions
                 equal to the number of variables in the domain of the table.
-                Each dimension has a size equal to the number of states of the 
-                corresponding variable. Each element of the array gives the 
+                Each dimension has a size equal to the number of states of the
+                corresponding variable. Each element of the array gives the
                 probability of a specific combination of variable states.
 
                 For example, values[0, 2] gives the probability that the first
                 variable is in the state 0 and the second variables is in the
                 state 2.
-                
-                If the values are not provided, all states are given an equal 
+
+                If the values are not provided, all states are given an equal
                 probability.
 
         """
-        self._domain = domain    
-       
+        self._domain = domain
+
         # If the probabilities are not provided, all events are equiprobable.
         if values is None:
             shape = [var.nb_states for var in domain]
@@ -308,16 +297,16 @@ class Table(object):
         new_domain = list(left_only + intersection + right_only)
 
         # Order the values.
-        permutation_order = np.zeros((len(left._domain)), dtype=int) 
+        permutation_order = np.zeros((len(left._domain)), dtype=int)
         for j, variable in enumerate(left._domain):
             permutation_order[left_domain.index(variable)] = j
         left_values = left._values.transpose(permutation_order)
 
-        permutation_order = np.zeros((len(right._domain)), dtype=int) 
+        permutation_order = np.zeros((len(right._domain)), dtype=int)
         for j, variable in enumerate(right._domain):
             permutation_order[right_domain.index(variable)] = j
         right_values = right._values.transpose(permutation_order)
-       
+
         left_divide = 1
         for v in right_only:
             left_divide *= v.nb_states
@@ -336,7 +325,7 @@ class Table(object):
                 left_ravel[i//left_divide] * right_ravel[i % right_mod]
 
         return Table(new_domain, new_values)
-    
+
     def __str__(self):
         """String representation of a bayesian.Table"""
 
@@ -363,8 +352,7 @@ class Table(object):
 
         return output
 
-
-    def marginalize(self, variable, normalize=True):
+    def marginalize(self, variable):
         """Marginalizes a variable out of the bayesian.Table
 
         Removes a variable from the domain of the table by summing it out. The
@@ -372,27 +360,22 @@ class Table(object):
 
         Args:
             variable (bayesian.Variable) : The variable to be marginalized.
-            normalize (optional, bool): Indicates if the resulting table 
-                should be normalized. Default is True.
 
         Returns:
             (bayesian.Table) : A new table without the variable in its domain.
 
         """
-        
+
         # Find the position of the variable in the domain of the table.
         index = self._domain.index(variable)
 
         # Sum over the variable and remove it from the domain.
         new_values = np.sum(self._values, index)
         new_domain = list(self._domain)
-        new_domain.pop(index) 
+        new_domain.pop(index)
 
-        # Create the new table and normalize it if required.
+        # Create the new table.
         new_table = Table(new_domain, new_values)
-        if normalize:
-            new_table.normalize()
-
         return new_table
 
     def normalize(self):
@@ -406,8 +389,8 @@ class Table(object):
     def _expand_domain(self, new_domain):
         """Expands the domain of a bayesian.Table
 
-        Expands the domain of a table by adding a new variable. Because the 
-        events of the table are independent of the new variable, this simply 
+        Expands the domain of a table by adding a new variable. Because the
+        events of the table are independent of the new variable, this simply
         duplicates the existing values of the table.
 
         Args:
@@ -418,8 +401,8 @@ class Table(object):
             (bayesian.Table) : A new table whose domain is new_domain.
 
         """
-        
-        # Find variables of the new domain which are not in the left table and 
+
+        # Find variables of the new domain which are not in the left table and
         # add them to the front of the table.
         expanded_domain = list(self._domain)
         tile_shape = [1] * len(expanded_domain)
@@ -432,23 +415,24 @@ class Table(object):
         expanded_values = np.tile(self._values, tile_shape)
 
         # Permute the table values to get the same order as the new domain.
-        permutation_order = np.zeros((len(expanded_domain))) 
+        permutation_order = np.zeros((len(expanded_domain)))
         for i, variable in enumerate(expanded_domain):
             permutation_order[new_domain.index(variable)] = i
         expanded_values = expanded_values.transpose(permutation_order)
 
         return Table(list(new_domain), expanded_values)
 
+
 class Variable(object):
     def __init__(self, symbol, nb_states=2):
         """Variable in a Bayesian network
 
-        The bayesian.Variable represents a variable in a Bayesian network with 
+        The bayesian.Variable represents a variable in a Bayesian network with
         a finite number of mutually exclusive states.
 
         Args:
             symbol (str) : A string used to print the variable. Has no impact
-                on the identity of the variable i.e. two varibles with the 
+                on the identity of the variable i.e. two varibles with the
                 same symbol are still distinct variable in the Bayesian
                 network.
             nb_states (optional, int) : The number of states of the variable.
