@@ -110,8 +110,8 @@ class Dynamic(bayesian.Network):
            A0---------A1---- ...
           / \        / \
          /   \      /   \
-        B0   C0    B1   C1
-         \_________/\________ ...
+        B0   C0----B1   C1-- ...
+         \_________/\_______ ...
 
         """
 
@@ -122,9 +122,21 @@ class Dynamic(bayesian.Network):
         b = [bayesian.Variable('B{}'.format(i)) for i in range(nb_steps)]
         c = [bayesian.Variable('C{}'.format(i)) for i in range(nb_steps)]
 
-        # Generate the tables and add them to the network.
-        for i in range(nb_steps - 1):
-            table = bayesian.Table(a[i:i+2], np.random.rand(2,2))
+        # Generate the tables within each step and add them to the network.
+        for i in range(nb_steps):
+            table = bayesian.Table([a[i], b[i]], np.random.rand(2, 2))
             self.add_table(table)
-            table = bayesian.Table(b[i:i+2], np.random.rand(2,2))
+            table = bayesian.Table([a[i], c[i]], np.random.rand(2, 2))
+            self.add_table(table)
+            table = bayesian.Table([b[i], c[i]], np.random.rand(2, 2))
+            self.add_table(table)
+
+        # Generate the tables that link steps and add them to the
+        # network.
+        for i in range(nb_steps - 1):
+            table = bayesian.Table(a[i:i+2], np.random.rand(2, 2))
+            self.add_table(table)
+            table = bayesian.Table(b[i:i+2], np.random.rand(2, 2))
+            self.add_table(table)
+            table = bayesian.Table([c[i], b[i+1]], np.random.rand(2, 2))
             self.add_table(table)
