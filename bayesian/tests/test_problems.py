@@ -1,4 +1,7 @@
 import unittest
+
+import numpy as np
+
 import bayesian
 import bayesian.tests.networks
 
@@ -46,6 +49,35 @@ class TestUsingProblems(unittest.TestCase):
         fuel_marginal.normalize()
         self.assertAlmostEqual(fuel_marginal[0], 0.001, 2)
         self.assertAlmostEqual(fuel_marginal[1], 0.999, 2)
+
+
+class TestUsingDynamicNetwork(unittest.TestCase):
+
+    def test_dynamic_network(self):
+        """Test the bayesian package using dynamic networks"""
+
+        for n in range(2, 11):
+            self.compare_marginals_dynamic_network(n)
+
+    def compare_marginals_dynamic_network(self, nb_steps):
+        """Compare the marginals of a dynamic network"""
+
+        # Generate a small dynamic network.
+        network = bayesian.tests.networks.Dynamic(nb_steps)
+
+        # Compute all the marginals the slow way.
+        nmarginals = network.marginals()
+
+        # Compute all the marginals with a junction tree.
+        junction_tree = bayesian.JunctionTree(network)
+        jmarginals = junction_tree.marginals()
+
+        # The results should be the same.
+        variables = [m.domain[0] for m in jmarginals]
+        for nmarginal in nmarginals:
+            jmarginal = jmarginals[variables.index(nmarginal.domain[0])]
+            np.testing.assert_array_almost_equal(
+                jmarginal._values, nmarginal._values)
 
 if __name__ == '__main__':
     unittest.main()

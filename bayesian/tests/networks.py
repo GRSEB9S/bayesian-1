@@ -1,12 +1,15 @@
+import numpy as np
+
 import bayesian
+
 
 class CarStartProblem(bayesian.Network):
     def __init__(self):
         """Bayesian network implementing the car start problem
-    
+
         This test is taken from page 35 of:
 
-        Jensen, Finn V. and Nielsen, Thomas D., Bayesian Network and Decision 
+        Jensen, Finn V. and Nielsen, Thomas D., Bayesian Network and Decision
         Graph, Springer New York, 2007.
 
         """
@@ -30,11 +33,11 @@ class CarStartProblem(bayesian.Network):
 
         # The meter depends on the fuel.
         meter_table = bayesian.Table([fuel, meter], [
-            [0.998, 0.001, 0.001], 
+            [0.998, 0.001, 0.001],
             [0.01, 0.60, 0.39]
         ])
 
-        # The car will start if there is fuel and the spark plug is 
+        # The car will start if there is fuel and the spark plug is
         # clean.
         start_table = bayesian.Table([start, fuel, spark], [
             [[1.0, 1.0], [0.99, 0.01]],
@@ -45,6 +48,7 @@ class CarStartProblem(bayesian.Network):
         self.add_table(spark_table)
         self.add_table(meter_table)
         self.add_table(start_table)
+
 
 class Pyramid(bayesian.Network):
     def __init__(self):
@@ -63,7 +67,7 @@ class Pyramid(bayesian.Network):
         Evidence is added to the node F.
 
         """
-       
+
         # Generate the network with no evidence.
         bayesian.Network.__init__(self)
 
@@ -94,3 +98,33 @@ class Pyramid(bayesian.Network):
         # Add the evidence.
         evidence_F = bayesian.Table([F], [100.0, 15.0])
         self.add_table(evidence_F)
+
+
+class Dynamic(bayesian.Network):
+    def __init__(self, nb_steps=2):
+        """Dynamic Bayesian network with varying length
+
+        This class represents a dynamic Bayesian network with a number of
+        steps which can be selected on construction.
+
+           A0---------A1---- ...
+          / \        / \
+         /   \      /   \
+        B0   C0    B1   C1
+         \_________/\________ ...
+
+        """
+
+        bayesian.Network.__init__(self)
+
+        # Generate variables.
+        a = [bayesian.Variable('A{}'.format(i)) for i in range(nb_steps)]
+        b = [bayesian.Variable('B{}'.format(i)) for i in range(nb_steps)]
+        c = [bayesian.Variable('C{}'.format(i)) for i in range(nb_steps)]
+
+        # Generate the tables and add them to the network.
+        for i in range(nb_steps - 1):
+            table = bayesian.Table(a[i:i+2], np.random.rand(2,2))
+            self.add_table(table)
+            table = bayesian.Table(b[i:i+2], np.random.rand(2,2))
+            self.add_table(table)
