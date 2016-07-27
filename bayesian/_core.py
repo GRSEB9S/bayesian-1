@@ -228,7 +228,7 @@ class Network(object):
 
 
 class Table(object):
-    def __init__(self, domain, values=None):
+    def __init__(self, domain, values=None, normalization=1.0):
         """Probability table in a Bayesian network
 
         A probability table assigns a probability to every possible combination
@@ -252,6 +252,7 @@ class Table(object):
 
         """
         self._domain = domain
+        self._normalization = normalization
 
         # If the probabilities are not provided, all events are equiprobable.
         if values is None:
@@ -259,7 +260,13 @@ class Table(object):
             self._values = np.ones(shape)
             self.normalize()
         else:
-            self._values = np.array(values)
+            # Normalize the values.
+            coefficient = np.sum(values)
+            if coefficient != 0:
+                self._normalization *= coefficient
+                self._values = np.array(values) / coefficient
+            else:
+                self._values = np.array(values)
 
     @property
     def domain(self):
@@ -324,7 +331,12 @@ class Table(object):
             new_values_inline[i] = \
                 left_ravel[i//left_divide] * right_ravel[i % right_mod]
 
-        return Table(new_domain, new_values)
+        # The new normalization factor is the product of the normalization of
+        # the tables.
+        table = Table(
+            new_domain, new_values,
+            left._normalization * right._normalization)
+        return table
 
     def __str__(self):
         """String representation of a bayesian.Table"""
@@ -375,7 +387,7 @@ class Table(object):
         new_domain.pop(index)
 
         # Create the new table.
-        new_table = Table(new_domain, new_values)
+        new_table = Table(new_domain, new_values, self._normalization)
         return new_table
 
     def normalize(self):
@@ -384,7 +396,13 @@ class Table(object):
         Normalizes a table so that the sum of all values is 1.0.
 
         """
-        self._values /= np.sum(self._values)
+        self._normalization = np.sum(self._values)
+        self._values /= self._normalization
+
+    def unnormalize(self):
+        """Unnormalize a bayesian.Table"""
+        self._values *= self._normalization
+        self._normalization = 1.0
 
     def _expand_domain(self, new_domain):
         """Expands the domain of a bayesian.Table

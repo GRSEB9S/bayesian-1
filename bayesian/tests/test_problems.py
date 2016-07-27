@@ -76,6 +76,7 @@ class TestUsingDynamicNetwork(unittest.TestCase):
         variables = [m.domain[0] for m in jmarginals]
         for nmarginal in nmarginals:
             jmarginal = jmarginals[variables.index(nmarginal.domain[0])]
+            jmarginal.normalize()
             np.testing.assert_array_almost_equal(
                 jmarginal._values, nmarginal._values)
 
