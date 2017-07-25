@@ -10,7 +10,7 @@ def junction_marginals():
     """Profile the marginals method using a dynamic network"""
 
     # Generate the network.
-    network = bayesian.tests.networks.Dynamic(500)
+    network = bayesian.tests.networks.Dynamic(1000)
 
     # Profile the computation of the marginals.
     junction_tree = bayesian.JunctionTree(network)

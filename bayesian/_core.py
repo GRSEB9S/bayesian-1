@@ -5,6 +5,8 @@ from itertools import combinations
 
 import numpy as np
 
+from bayesian._optimized import table_mul
+
 
 class Network(object):
     def __init__(self, network=None):
@@ -327,9 +329,10 @@ class Table(object):
         new_values_inline = new_values.ravel()
         left_ravel = left_values.ravel()
         right_ravel = right_values.ravel()
-        for i in range(new_values.size):
-            new_values_inline[i] = \
-                left_ravel[i//left_divide] * right_ravel[i % right_mod]
+        table_mul(left_ravel, right_ravel, new_values_inline, left_divide, right_mod, new_values_inline.size)
+        #for i in range(new_values.size):
+        #    new_values_inline[i] = \
+        #        left_ravel[i//left_divide] * right_ravel[i % right_mod]
 
         # The new normalization factor is the product of the normalization of
         # the tables.
