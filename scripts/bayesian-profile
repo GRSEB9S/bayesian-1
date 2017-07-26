@@ -1,0 +1,51 @@
+#!/usr/bin/env python
+
+import time
+
+import numpy as np
+
+import bayesian
+
+def timeit(func, args=(), nb_repeats=50):
+
+    # Burn in.
+    for _ in range(2):
+        func(*args)
+
+    execution_time = 0.0
+    for _ in range(nb_repeats):
+        start_time = time.time()
+        func(*args)
+        execution_time += time.time() - start_time
+    execution_time /= nb_repeats
+
+    print('{} loops, average time {:.0f}ms'.format(nb_repeats, execution_time * 1000))
+
+
+def main():
+
+    # Build two tables with many variables.
+    variables = [bayesian.Variable(c, 2) for c in 'abcdefghijklmnopqrstuvw']
+    left_domain = bayesian.Domain(variables[:-1])
+    right_domain = bayesian.Domain(variables[1:])
+
+    left = bayesian.Table(left_domain, np.random.rand(*left_domain.nb_states))
+    right = bayesian.Table(right_domain, np.random.rand(*right_domain.nb_states))
+
+    def direct_product():
+        return left * right
+
+    product = bayesian._junction.Product(left, right)
+    def precomputed_product():
+        product.update()
+        return product.result
+
+    print('\nProduct of tables using direct method')
+    timeit(direct_product)
+
+    print('\nProduct of tables using precomputed method')
+    timeit(precomputed_product)
+    
+
+if __name__ == '__main__':
+    main()

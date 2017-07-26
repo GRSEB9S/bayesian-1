@@ -5,6 +5,7 @@ from itertools import combinations
 
 import numpy as np
 
+import bayesian
 from bayesian._optimized import table_mul
 
 
@@ -253,7 +254,7 @@ class Table(object):
                 probability.
 
         """
-        self._domain = domain
+        self._domain = bayesian.Domain(domain)
         self._normalization = normalization
 
         # If the probabilities are not provided, all events are equiprobable.

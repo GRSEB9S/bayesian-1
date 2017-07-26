@@ -1,8 +1,33 @@
 import operator
 from copy import copy
 from functools import reduce
+from itertools import chain
+
+import numpy as np
 
 import bayesian
+
+
+class Product(object):
+
+    def __init__(self, left, right):
+        """Product of two Bayesian table."""
+
+        self.left = left
+        self.right = right
+        domain = left.domain * right.domain
+
+        self.left_map = bayesian.map(left.domain, domain)
+        self.right_map = bayesian.map(right.domain, domain)
+        self.result = bayesian.Table(domain, np.zeros(domain.nb_states))
+
+    def update(self):
+        """Updates the result table of the product"""
+
+        self.result._values.flat = self.left._values.flat[self.left_map] * \
+                                   self.right._values.flat[self.right_map]
+
+        self.result._normalization = self.left._normalization * self.right._normalization
 
 
 class Bucket(object):
