@@ -33,6 +33,26 @@ class Product(object):
                                      self.right._normalization * \
                                      coefficient
 
+class Marginal(object):
+
+    def __init__(self, table, variable):
+        """Marginalize a variable out of a probability table"""
+
+        self.table = table
+        self.variable = variable
+        self.index = table.domain.index(variable)
+
+        domain = table.domain - variable
+        self.result = bayesian.Table(domain)
+
+        self.map = bayesian.map(domain, table.domain)
+
+    def update(self):
+        """Updates the result table of the marginal"""
+
+        self.result._values = np.sum(self.table._values, self.index)
+        self.result._normalization = self.table._normalization
+
 
 class Bucket(object):
     def __init__(self, variables):
