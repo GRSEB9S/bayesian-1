@@ -272,7 +272,7 @@ class JunctionTree(object):
             graph_copy.remove_node(isolated)
             isolated = graph_copy.isolated_node
 
-        done = False
+        done = len(graph_copy._nodes) == 0
         while not done:
 
             # Find a simplicial node if there is one. If not, make one

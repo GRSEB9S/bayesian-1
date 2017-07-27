@@ -81,7 +81,7 @@ class DomainGraph(object):
     def get_minimal_family(self):
         """Get the node that has the smallest family in the graph"""
 
-        selected = next(iter(self._nodes))
+        selected = next(iter(self._nodes), None)
         for node in self._nodes:
             if len(node.family) < len(selected.family):
                 selected = node
