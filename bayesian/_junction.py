@@ -19,7 +19,7 @@ class Product(object):
 
         self.left_map = bayesian.map(left.domain, domain)
         self.right_map = bayesian.map(right.domain, domain)
-        self.result = bayesian.Table(domain, np.zeros(domain.nb_states))
+        self.result = bayesian.Table(domain)
 
     def update(self):
         """Updates the result table of the product"""
@@ -27,7 +27,11 @@ class Product(object):
         self.result._values.flat = self.left._values.flat[self.left_map] * \
                                    self.right._values.flat[self.right_map]
 
-        self.result._normalization = self.left._normalization * self.right._normalization
+        coefficient = np.sum(self.result._values) 
+        self.result._values /= coefficient
+        self.result._normalization = self.left._normalization * \
+                                     self.right._normalization * \
+                                     coefficient
 
 
 class Bucket(object):
@@ -51,6 +55,8 @@ class Bucket(object):
 
         # The probability tables of the bucket.
         self.tables = []
+
+        self.index = -1
 
 
 class Separator(object):
@@ -88,10 +94,16 @@ class JunctionTree(object):
         # Keep the network.
         self._network = network
 
+        # One variable for each independent subgraph.
+        self.normalization = 1
+        self.subgraph_variables = []
+
         # Compute the domain graph and use it to initialize the junction
         # tree.
         domain_graph = bayesian.DomainGraph(network)
         self._build_from_graph(domain_graph)
+
+
 
         # Prepare to compute marginals.
         self.fill()
@@ -168,6 +180,7 @@ class JunctionTree(object):
     def marginals(self):
         """Compute all marginals"""
 
+
         variables = self.network.domain
 
         marginals = []
@@ -186,7 +199,12 @@ class JunctionTree(object):
                 tables.append(separator.upbound)
 
             # Compute the product of all tables.
-            new_table = reduce(operator.mul, tables)
+            if len(tables) == 1:
+                new_table = bayesian.Table(tables[0].domain,
+                                           tables[0]._values,
+                                           tables[0]._normalization)
+            else:
+                new_table = reduce(operator.mul, tables)
 
             # Marginalize all variables except the current objective.
             for bucket_variable in bucket.variables:
@@ -194,6 +212,14 @@ class JunctionTree(object):
                     new_table = new_table.marginalize(bucket_variable)
 
             marginals.append(new_table)
+
+        self.normalization = 1.0
+        for marginal in marginals:
+            if marginal.domain[0] in self.subgraph_variables:
+                self.normalization = self.normalization * marginal._normalization
+
+        for marginal in marginals:
+            marginal._normalization = self.normalization
 
         return marginals
 
@@ -209,6 +235,22 @@ class JunctionTree(object):
 
         # The list of used tables.
         used_tables = set()
+
+        # First, find the isolated nodes of the graphs and place them in their
+        # own bucket.
+        isolated = graph_copy.isolated_node
+        while isolated is not None:
+
+            bucket = Bucket(set([isolated.data]))
+            self.buckets.append(bucket)
+            self.subgraph_variables.append(isolated.data)
+
+            possible_tables = graph_copy.network.get_tables(isolated.data)
+            bucket.tables = list(set(possible_tables) - used_tables)
+            used_tables = used_tables | set(bucket.tables)
+
+            graph_copy.remove_node(isolated)
+            isolated = graph_copy.isolated_node
 
         done = False
         while not done:
@@ -240,12 +282,18 @@ class JunctionTree(object):
                 for node in nodes_to_remove:
                     graph_copy.remove_node(node)
 
-                # The remaining nodes are part of a separator.
-                separator = Separator(set([n.data for n in nodes_to_keep]))
-                separator.index = nb_nodes_removed
-                separator.downward = bucket
-                bucket.out = separator
-                self.separators.append(separator)
+                # The remaining nodes are part of a separator. When the graph
+                # generates independent trees, it is possible for a separator
+                # to be empty. In that case, do not add the separator.
+                separator_variables = set([n.data for n in nodes_to_keep])
+                if len(separator_variables) > 0:
+                    separator = Separator(separator_variables)
+                    separator.index = nb_nodes_removed
+                    separator.downward = bucket
+                    bucket.out = separator
+                    self.separators.append(separator)
+                else:
+                    self.subgraph_variables.append(next(n.data for n in family))
 
                 # Update the index of the bucket.
                 bucket.index = nb_nodes_removed
@@ -253,6 +301,7 @@ class JunctionTree(object):
                 nodes_to_remove = family
                 bucket.index = len(graph._nodes)
                 done = True
+                self.subgraph_variables.append(next(n.data for n in family))
 
             # Find the tables that contains the variables removed from the
             # graph and add them to the bucket.

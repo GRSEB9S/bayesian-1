@@ -14,12 +14,16 @@ class TestProduct(unittest.TestCase):
         b = bayesian.Variable('b')
 
         # The test tables.
-        left = bayesian.Table([a, b], [[0.2, 0.8], [0.7, 0.3]])
-        right = bayesian.Table([a], [0.1, 0.9])
+        left = bayesian.Table([a, b], [[0.1, 0.2], [0.3, 0.4]])
+        right = bayesian.Table([b], [0.4, 0.6])
 
         product = bayesian._junction.Product(left, right)
         product.update()
         result = product.result
+
+        np.testing.assert_array_almost_equal(
+            result._values, np.array([[0.04, 0.12], [0.12, 0.24]])/0.52)
+        self.assertAlmostEqual(result._normalization, 0.52)
 
         # The product should be the same not matter how it is
         # computed, but the order of the variables might not 

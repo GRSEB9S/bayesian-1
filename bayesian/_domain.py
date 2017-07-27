@@ -52,6 +52,12 @@ class DomainGraph(object):
                 return node
         return None
 
+    @property
+    def isolated_node(self):
+        """Get an isolated node"""
+        return next((n for n in self._nodes if n.is_isolated), None)
+
+
     def add_node(self, node):
         """Adds a node to the undirected graph"""
         self._nodes.add(node)
@@ -137,6 +143,11 @@ class Node(object):
         nodes = [n for n in self.links]
         nodes.append(self)
         return set(nodes)
+
+    @property
+    def is_isolated(self):
+        """Indicates if a node is isolated"""
+        return len(self._links) == 0
 
     @property
     def is_simplicial(self):

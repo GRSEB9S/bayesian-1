@@ -259,8 +259,7 @@ class Table(object):
 
         # If the probabilities are not provided, all events are equiprobable.
         if values is None:
-            shape = [var.nb_states for var in domain]
-            self._values = np.ones(shape)
+            self._values = np.ones(domain.nb_states)
             self.normalize()
         else:
             # Normalize the values.
