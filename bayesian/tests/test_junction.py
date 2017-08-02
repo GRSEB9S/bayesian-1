@@ -1,7 +1,11 @@
+from itertools import chain
 import unittest
 
+import numpy as np
+
 from bayesian import Domain, Table, Variable
-from bayesian.junction import DomainGraph
+from bayesian.junction import DomainGraph, JunctionTree
+import bayesian.tables
 
 
 class TestDomainGraph(unittest.TestCase):
@@ -74,3 +78,187 @@ class TestDomainGraph(unittest.TestCase):
         self.assertEqual(len(graphs), 2)
         self.assertTrue(graphs[0].is_isolated)
         self.assertTrue(graphs[1].is_isolated)
+
+
+class TestJunctionTree(unittest.TestCase):
+
+    def test_from_graph_simple(self):
+        """Test the from_graph static method in the simplest case"""
+
+        # Define one table with dependent variables.
+        a = Variable('a')
+        b = Variable('b')
+        table = Table([a, b], [[0.1, 0.2], [0.3, 0.4]])
+
+        junction_trees = JunctionTree.from_tables([table])
+
+        # There should be a single junction tree.
+        self.assertEqual(len(junction_trees), 1)
+       
+        # The junction tree should be a single node with all the variables.
+        junction_tree = junction_trees[0]
+        nb_nodes = 0
+        for node in junction_tree:
+            self.assertSetEqual(node.variables,
+                                set([a, b]))
+            self.assertSetEqual(node.boundary, set())
+            self.assertListEqual(node.tables, [table])
+            nb_nodes += 1
+
+        self.assertEqual(nb_nodes, 1)
+
+    def test_simplify_simple(self):
+        """Test the _simplify method in the simple case"""
+
+        a = Variable('a')
+        b = Variable('b')
+        table_ab = bayesian.tables.Probability(bayesian.Domain([a, b]), 
+                                               [[0.1, 0.2], [0.3, 0.4]])
+        table_a = bayesian.tables.Probability(bayesian.Domain([a]), 
+                                              [0.1, 0.9])
+
+        junction_trees = JunctionTree.from_tables([table_ab, table_a])
+        self.assertEqual(len(junction_trees), 1)
+        junction_tree = junction_trees[0]
+        junction_tree._simplify()
+
+        # There should be a single table left with the result of the product.
+        self.assertEqual(len(junction_tree.tables), 1)
+        table = junction_tree.tables[0]
+        self.assertFalse(table.updated)
+
+        table.update()
+        self.assertTrue(table.updated)
+        values = np.array([[0.01, 0.02], [0.27, 0.36]])
+        values /= np.sum(values)
+        np.testing.assert_array_almost_equal(table.values, values)
+
+    def test_collect_simple(self):
+        """Test the _collect method in the simple case"""
+
+        a = Variable('a')
+        b = Variable('b')
+
+        table = bayesian.tables.Probability(bayesian.Domain([a, b]), 
+                                            [[0.1, 0.2], [0.3, 0.4]])
+
+        parent = JunctionTree(set([b]), set(), [])
+        child = JunctionTree(set([a, b]), set([b]), [table])
+        parent.add(child)
+
+        parent._collect()
+
+        # The parent has no collect information.
+        self.assertIsNone(parent.collect)
+
+        # The child has the table with 'a' marginalized out.
+        self.assertIsNotNone(child.collect)
+        table = child.collect
+        self.assertFalse(table.updated)
+        self.assertTupleEqual(table.domain, (b,))
+
+        table.update()
+        self.assertTrue(table.updated)
+        np.testing.assert_array_almost_equal(table.values, [0.4, 0.6])
+
+
+class TestMarginalize(unittest.TestCase):
+    """Test the marginalize function"""
+
+    def test_simple_list(self):
+        """Test the marginalize function using a list graph"""
+
+        a = Variable('a')
+        b = Variable('b')
+
+        table_a = bayesian.tables.Probability(bayesian.Domain([a]),
+                                              [0.1, 0.9])
+        table_ab = bayesian.tables.Probability(bayesian.Domain([a, b]),
+                                               [[0.1, 0.2], [0.3, 0.4]])
+
+        marginals = list(chain(*bayesian.junction.marginalize([table_a, table_ab])))
+
+        # We should have one marginal per variable.
+        self.assertEqual(len(marginals), 2)
+        variables = [m.domain[0] for m in marginals]
+        marginal_a = marginals[variables.index(a)]
+        marginal_b = marginals[variables.index(b)]
+
+        # The marginals should be udpated.
+        self.assertTrue(marginal_a.updated)
+        values = np.array([0.03, 0.63])
+        normalization = values.sum() 
+        values /= normalization
+        self.assertAlmostEqual(marginal_a.normalization, normalization)
+        np.testing.assert_array_almost_equal(marginal_a.values, values)
+
+        self.assertTrue(marginal_b.updated)
+        values = np.array([0.28, 0.38])
+        normalization = values.sum() 
+        values /= normalization
+        self.assertAlmostEqual(marginal_b.normalization, normalization)
+        np.testing.assert_array_almost_equal(marginal_b.values, values)
+
+    def test_diamond(self):
+        """Test the marginalize function using a diamond graph"""
+
+        a = Variable('a')
+        b = Variable('b')
+        c = Variable('c')
+        d = Variable('d')
+
+        table_ab = bayesian.tables.Probability(bayesian.Domain([a, b]),
+                                               [[0.1, 0.2], [0.3, 0.4]])
+        table_ac = bayesian.tables.Probability(bayesian.Domain([a, c]),
+                                               [[0.1, 0.2], [0.3, 0.4]])
+        table_bd = bayesian.tables.Probability(bayesian.Domain([b, d]),
+                                               [[0.1, 0.2], [0.3, 0.4]])
+        table_cd = bayesian.tables.Probability(bayesian.Domain([c, d]),
+                                               [[0.1, 0.2], [0.3, 0.4]])
+
+        marginals = list(chain(*bayesian.junction.marginalize([table_ab, table_ac, table_bd, table_cd])))
+
+        # One marginal per variable.
+        self.assertEqual(len(marginals), 4)
+        variables = [m.domain[0] for m in marginals]
+        marginal_a = marginals[variables.index(a)]
+        marginal_b = marginals[variables.index(b)]
+        marginal_c = marginals[variables.index(c)]
+        marginal_d = marginals[variables.index(d)]
+
+        # The marginals should be udpated.
+        self.assertTrue(marginal_a.updated)
+        values = np.array([
+            0.0001 + 0.0004 + 0.0006 + 0.0016 + 0.0006 + 0.0016 + 0.0036 + 0.0064,
+            0.0009 + 0.0036 + 0.0036 + 0.0096 + 0.0036 + 0.0096 + 0.0144 + 0.0256])
+        normalization = values.sum() 
+        values /= normalization
+        self.assertAlmostEqual(marginal_a.normalization, normalization)
+        np.testing.assert_array_almost_equal(marginal_a.values, values)
+
+        self.assertTrue(marginal_b.updated)
+        values = np.array([
+            0.0001 + 0.0004 + 0.0006 + 0.0016 + 0.0009 + 0.0036 + 0.0036 + 0.0096,
+            0.0006 + 0.0016 + 0.0036 + 0.0064 + 0.0036 + 0.0096 + 0.0144 + 0.0256])
+        normalization = values.sum() 
+        values /= normalization
+        self.assertAlmostEqual(marginal_b.normalization, normalization)
+        np.testing.assert_array_almost_equal(marginal_b.values, values)
+
+        self.assertTrue(marginal_c.updated)
+        values = np.array([
+            0.0001 + 0.0004 + 0.0006 + 0.0016 + 0.0009 + 0.0036 + 0.0036 + 0.0096,
+            0.0006 + 0.0016 + 0.0036 + 0.0064 + 0.0036 + 0.0096 + 0.0144 + 0.0256])
+        normalization = values.sum() 
+        values /= normalization
+        self.assertAlmostEqual(marginal_c.normalization, normalization)
+        np.testing.assert_array_almost_equal(marginal_c.values, values)
+
+        self.assertTrue(marginal_d.updated)
+        values = np.array([
+            0.0001 + 0.0006 + 0.0006 + 0.0036 + 0.0009 + 0.0036 + 0.0036 + 0.0144,
+            0.0004 + 0.0016 + 0.0016 + 0.0064 + 0.0036 + 0.0096 + 0.0096 + 0.0256])
+        normalization = values.sum() 
+        values /= normalization
+        self.assertAlmostEqual(marginal_d.normalization, normalization)
+        np.testing.assert_array_almost_equal(marginal_d.values, values)

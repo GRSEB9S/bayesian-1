@@ -55,9 +55,9 @@ class Network(object):
         # of the network.
         domain = []
         for table in self._tables:
-            domain = np.concatenate((domain, table._domain))
+            domain.extend(table.domain)
 
-        return list(np.unique(domain))
+        return list(set(domain))
 
     def __str__(self):
         """String representation of the bayesian.Network"""

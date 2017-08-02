@@ -1,3 +1,4 @@
+from functools import reduce
 import operator
 
 import numpy as np
