@@ -6,6 +6,7 @@ import numpy as np
 from bayesian import Domain, Table, Variable
 from bayesian.junction import DomainGraph, JunctionTree
 import bayesian.tables
+from bayesian.tables import Probability
 
 
 class TestDomainGraph(unittest.TestCase):
@@ -161,6 +162,80 @@ class TestJunctionTree(unittest.TestCase):
         self.assertTrue(table.updated)
         np.testing.assert_array_almost_equal(table.values, [0.4, 0.6])
 
+    def test_diamond(self):
+
+        symbols = [str(i) for i in range(4)]
+        variables = [Variable(s) for s in symbols]
+        tables = []
+        tables.append(Probability(Domain([variables[0], variables[1]])))
+        tables.append(Probability(Domain([variables[0], variables[2]])))
+        tables.append(Probability(Domain([variables[1], variables[3]])))
+        tables.append(Probability(Domain([variables[2], variables[3]])))
+
+        junction_trees = JunctionTree.from_tables(tables) 
+
+        # There should be a single junction tree.
+        self.assertEqual(len(junction_trees), 1)
+        junction_tree = junction_trees[0]
+
+        # The junction tree has 2 nodes.
+        self.assertEqual(len([n for n in junction_tree]), 2)
+
+        # The head of the tree should contain 3 variables and the boundary 0.
+        self.assertEqual(len(junction_tree.variables), 3)
+        self.assertEqual(len(junction_tree.boundary), 0)
+        self.assertEqual(len(junction_tree.tables), 2)
+        
+        # The tables should contain only variables that are in the node.
+        domains = [t.domain for t in junction_tree.tables]
+        self.assertTrue(set(chain(*domains)) == junction_tree.variables)
+
+        # The subtree should contain 3 variables and the boundary 2.
+        sub_junction_tree = list(n for n in junction_tree)[1]
+        self.assertEqual(len(sub_junction_tree.variables), 3)
+        self.assertEqual(len(sub_junction_tree.boundary), 2)
+        self.assertEqual(len(sub_junction_tree.tables), 2)
+
+        # The tables should contain only variables that are in the node.
+        domains = [t.domain for t in sub_junction_tree.tables]
+        self.assertTrue(set(chain(*domains)) == sub_junction_tree.variables)
+
+        # Before simplifying, keep a reference to the old tables.
+        junction_tree_tables = junction_tree.tables
+        sub_junction_tree_tables = sub_junction_tree.tables
+
+        # Simplifying the tree should reduce the tables to 1 element.
+        junction_tree._simplify()
+        self.assertEqual(len(junction_tree.tables), 1)
+        self.assertTrue(set(junction_tree.tables[0].domain) == junction_tree.variables)
+        self.assertEqual(junction_tree.tables[0].left, junction_tree_tables[0])
+        self.assertEqual(junction_tree.tables[0].right, junction_tree_tables[1])
+        self.assertEqual(len(sub_junction_tree.tables), 1)
+        self.assertTrue(set(sub_junction_tree.tables[0].domain) == sub_junction_tree.variables)
+        self.assertEqual(sub_junction_tree.tables[0].left, sub_junction_tree_tables[0])
+        self.assertEqual(sub_junction_tree.tables[0].right, sub_junction_tree_tables[1])
+
+        # After collecting, the sub junction tree should have a table to
+        # share.
+        junction_tree._collect()
+        self.assertIsNone(junction_tree.collect)
+        self.assertIsNotNone(sub_junction_tree.collect) 
+        self.assertSetEqual(set(sub_junction_tree.collect.domain), sub_junction_tree.boundary)
+        self.assertEqual(sub_junction_tree.collect.table, sub_junction_tree.tables[0]) 
+
+        # After distributing, the sub junction tree should have a table to share.
+        junction_tree._distribute()
+        self.assertIsNone(junction_tree.distribute)
+        self.assertIsNotNone(sub_junction_tree.distribute)
+        self.assertSetEqual(set(sub_junction_tree.collect.domain), sub_junction_tree.boundary)
+        self.assertEqual(sub_junction_tree.distribute.table, junction_tree.tables[0]) 
+
+        # The marginals should include all tables.
+        marginals = []
+        visited = set()
+        junction_tree._marginals(marginals, visited)
+
+
 
 class TestMarginalize(unittest.TestCase):
     """Test the marginalize function"""
@@ -183,6 +258,10 @@ class TestMarginalize(unittest.TestCase):
         variables = [m.domain[0] for m in marginals]
         marginal_a = marginals[variables.index(a)]
         marginal_b = marginals[variables.index(b)]
+
+        # All the marginals should have the same normalisation coefficients.
+        for marginal in marginals:
+            self.assertAlmostEqual(marginal.normalization, marginals[0].normalization)
 
         # The marginals should be udpated.
         self.assertTrue(marginal_a.updated)
@@ -226,6 +305,10 @@ class TestMarginalize(unittest.TestCase):
         marginal_c = marginals[variables.index(c)]
         marginal_d = marginals[variables.index(d)]
 
+        # All the marginals should have the same normalisation coefficients.
+        for marginal in marginals:
+            self.assertAlmostEqual(marginal.normalization, marginals[0].normalization)
+
         # The marginals should be udpated.
         self.assertTrue(marginal_a.updated)
         values = np.array([
@@ -262,3 +345,39 @@ class TestMarginalize(unittest.TestCase):
         values /= normalization
         self.assertAlmostEqual(marginal_d.normalization, normalization)
         np.testing.assert_array_almost_equal(marginal_d.values, values)
+
+    def test_normalization(self):
+        """Test that the normalization coefficients are always the same"""
+
+        variable_symbols = 'abcde'
+        variables = [bayesian.Variable(s) for s in variable_symbols]
+
+        table_1 = bayesian.tables.Probability(
+            bayesian.Domain(variables[:-1]),
+            np.random.rand(2, 2, 2, 2))
+
+        table_2 = bayesian.tables.Probability(
+            bayesian.Domain(variables[1:]),
+            np.random.rand(2, 2, 2, 2))
+
+        table_a = bayesian.tables.Probability(
+            bayesian.Domain([variables[0]]),
+            [0.5, 0.5])
+        table_e = bayesian.tables.Probability(
+            bayesian.Domain([variables[-1]]),
+            [0.5, 0.5])
+
+        marginals = list(chain(*bayesian.junction.marginalize(
+            [table_1, table_2, table_a, table_e])))
+
+        for _ in range(100):
+
+            table_a.values = np.random.rand(2)
+            table_e.values = np.random.rand(2)
+    
+            for marginal in marginals:
+                marginal.update()
+
+            for marginal in marginals:
+                self.assertAlmostEqual(marginals[0].normalization,
+                                       marginal.normalization)

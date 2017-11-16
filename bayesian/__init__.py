@@ -1,4 +1,5 @@
 from functools import reduce
+
 import operator
 
 import numpy as np
@@ -12,6 +13,20 @@ from bayesian._junction import JunctionTree
 
 
 def map(subdomain, domain):
+    """Returns a map between two domains"""
+
+    augmented_subdomain = subdomain * domain
+    new_shape = tuple(s if v in subdomain else 1
+                      for s, v in zip(augmented_subdomain.nb_states, augmented_subdomain))
+    reps = tuple(1 if v in subdomain else s
+                 for s, v in zip(augmented_subdomain.nb_states, augmented_subdomain))
+    subindices = np.tile(np.arange(subdomain.size).reshape(new_shape), reps)
+
+    new_order = tuple(augmented_subdomain.index(v) for v in domain)
+
+    return subindices.transpose(new_order).ravel()
+
+def map2(subdomain, domain):
     """Returns a map between two domains"""
 
     subdomain_reordered = tuple(v for v in domain if v in subdomain)
@@ -61,6 +76,9 @@ class Domain(tuple):
     def states(self):
         return (np.array(np.unravel_index(i, self.nb_states))
                 for i in range(self.size))
+
+    def __le__(self, other):
+        return set(self) <= set(other)
 
     def __mul__(left, right):
         """Product of table domains

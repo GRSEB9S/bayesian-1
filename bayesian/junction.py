@@ -1,5 +1,5 @@
 from functools import reduce
-from itertools import combinations
+from itertools import chain, combinations
 
 from recur import preorder, postorder
 from recur.tree import Tree
@@ -61,7 +61,6 @@ class JunctionTree(Tree):
 
         junction_trees = []
         for graph in DomainGraph.from_tables(tables):
-
             nodes = []
             while graph is not None:
 
@@ -80,8 +79,9 @@ class JunctionTree(Tree):
                 to_remove = family - boundary
 
                 # Get the tables that contain the nodes to remove.
+                vars_to_remove = set(n.variable for n in to_remove)
                 node_tables = [t for t in remaining_tables
-                               if len(to_remove & set(t.domain)) != 0] 
+                               if len(vars_to_remove & set(t.domain)) != 0] 
                 remaining_tables = [t for t in remaining_tables
                                     if t not in node_tables]
 
@@ -91,19 +91,18 @@ class JunctionTree(Tree):
 
                 nodes.append(JunctionTree(set(n.variable for n in family),
                                           set(n.variable for n in boundary),
-                                          tables))
+                                          node_tables))
                 graph = next((n for n in boundary), None)
 
             for child, parent in combinations(nodes, 2):
                 if child.boundary <= parent.variables:
                     parent.add(child)
-                    break
 
             junction_trees.append(nodes[-1])
 
         return junction_trees
 
-    @postorder()
+    @postorder('method')
     def _collect(self):
 
         if self.parent is not None:
@@ -130,28 +129,29 @@ class JunctionTree(Tree):
             children = (c for c in self.children if c is not child)
             tables = self.tables + [c.collect for c in children]
 
-            if self.parent is not None:
-                tables.append(self.parent.distribute)
+            if self.distribute is not None:
+                tables.append(self.distribute)
 
             table = reduce(bayesian.tables.Product, tables)
 
-            # Marginalize all variables that are not in the boundary.
+            # Marginalize all variables that are not in the boundary of
+            # the child.
             for variable in self.variables - child.boundary:
                 table = bayesian.tables.Marginal(table, variable)
 
-            self.distribute = table
+            child.distribute = table
 
-    @preorder
+    @postorder('method')
     def _marginals(self, marginals, visited):
 
-        new_variables = [v for v in self.variables if v not in visited]
+        new_variables = self.variables - self.boundary - visited
         if len(new_variables) > 0:
 
-            visited.extend(new_variables)
+            visited |= new_variables
 
             tables = self.tables + [c.collect for c in self.children]
-            if self.parent is not None:
-                tables.append(self.parent.distribute)
+            if self.distribute is not None:
+                tables.append(self.distribute)
 
             table = reduce(bayesian.tables.Product, tables)
 
@@ -160,29 +160,48 @@ class JunctionTree(Tree):
                 marginal = table
                 for to_marginalize in self.variables - {variable}:
                     marginal = bayesian.tables.Marginal(marginal, to_marginalize)
-
+                
                 marginals.append(marginal)
 
-    @postorder()
+    @postorder('method')
     def _simplify(self):
         self.tables = [reduce(bayesian.tables.Product, self.tables)]
 
+def super_product(marginal):
+
+    tables = []
+    for table in marginal:
+        if type(table) is bayesian.tables.Probability:
+            tables.append(table)
+
+    result = reduce(bayesian.tables.Product, tables)
+    result.update()
+    return result
+
+def source_tables(marginal):
+    
+    tables = []
+    for table in marginal:
+        if type(table) is bayesian.tables.Probability:
+            tables.append(table)
+
+    return tables
 
 def marginalize(tables):
     """Returns the marginal of all variables"""
 
     junction_trees = JunctionTree.from_tables(tables)
 
-    all_marginals = [[] for _ in range(len(junction_trees))] 
+    all_marginals = [[] for _ in junction_trees] 
     for junction_tree, marginals in zip(junction_trees, all_marginals):
         junction_tree._simplify()
         junction_tree._collect()
         junction_tree._distribute()
     
-        visited = []
+        visited = set()
         junction_tree._marginals(marginals, visited)
 
-    for marginal in marginals:
-        marginal.update()
+        for marginal in marginals:
+            marginal.update()
 
     return all_marginals

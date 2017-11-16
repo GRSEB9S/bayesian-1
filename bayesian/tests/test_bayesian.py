@@ -8,36 +8,235 @@ import bayesian
 class Function(unittest.TestCase):
     """Test the functions of the bayesian.__init__.py module"""
 
-    def test_map(self):
+    def test_map_BCA_ABC(self):
 
         a = bayesian.Variable('a', 2)
         b = bayesian.Variable('b', 2)
         c = bayesian.Variable('c', 2)
-        d = bayesian.Variable('d', 2)
 
-        domain = bayesian.Domain((a, b))
-        subdomain = bayesian.Domain((a, b))
+        domain = bayesian.Domain([a, b, c])
+        subdomain = bayesian.Domain([b, c, a])
+        
         map = bayesian.map(subdomain, domain)
-        np.testing.assert_array_almost_equal(map, [0, 1, 2, 3])
 
-        domain = bayesian.Domain((a, b))
-        subdomain = bayesian.Domain((a,))
-        map = bayesian.map(subdomain, domain)
-        np.testing.assert_array_almost_equal(map, [0, 0, 1, 1])
-
-        domain = bayesian.Domain((a, b, c, d))
-        subdomain = bayesian.Domain((a, d))
-        map = bayesian.map(subdomain, domain)
-        np.testing.assert_array_almost_equal(
+        np.testing.assert_array_equal(
             map, 
-            [0, 1, 0, 1, 0, 1, 0, 1, 2, 3, 2, 3, 2, 3, 2, 3])
+            [0, 2, 4, 6, 1, 3, 5, 7])
 
-        domain = bayesian.Domain((a, b, c, d))
-        subdomain = bayesian.Domain((d, a))
+#    def test_map_simple(self):
+#
+#        a = bayesian.Variable('a', 2)
+#        b = bayesian.Variable('b', 2)
+#        c = bayesian.Variable('c', 2)
+#        d = bayesian.Variable('d', 2)
+#
+#        domain = bayesian.Domain((a, b))
+#        subdomain = bayesian.Domain((a, b))
+#        map = bayesian.map(subdomain, domain)
+#        np.testing.assert_array_almost_equal(map, [0, 1, 2, 3])
+#
+#        domain = bayesian.Domain((a, b))
+#        subdomain = bayesian.Domain((a,))
+#        map = bayesian.map(subdomain, domain)
+#        np.testing.assert_array_almost_equal(map, [0, 0, 1, 1])
+#
+#        domain = bayesian.Domain((a, b, c, d))
+#        subdomain = bayesian.Domain((a, d))
+#        map = bayesian.map(subdomain, domain)
+#        np.testing.assert_array_almost_equal(
+#            map, 
+#            [0, 1, 0, 1, 0, 1, 0, 1, 2, 3, 2, 3, 2, 3, 2, 3])
+#
+#        domain = bayesian.Domain((a, b, c, d))
+#        subdomain = bayesian.Domain((d, a))
+#        map = bayesian.map(subdomain, domain)
+#        np.testing.assert_array_almost_equal(
+#            map, 
+#            [0, 2, 0, 2, 0, 2, 0, 2, 1, 3, 1, 3, 1, 3, 1, 3])
+
+    def test_map_AB_ABC(self):
+
+        a = bayesian.Variable('a', 2)
+        b = bayesian.Variable('b', 2)
+        c = bayesian.Variable('c', 2)
+
+        domain = bayesian.Domain([a, b, c])
+        subdomain = bayesian.Domain([a, b])
+        
         map = bayesian.map(subdomain, domain)
-        np.testing.assert_array_almost_equal(
+
+        np.testing.assert_array_equal(
             map, 
-            [0, 2, 0, 2, 0, 2, 0, 2, 1, 3, 1, 3, 1, 3, 1, 3])
+            [0, 0, 1, 1, 2, 2, 3, 3])
+
+    def test_map_BA_ABC(self):
+
+        a = bayesian.Variable('a', 2)
+        b = bayesian.Variable('b', 2)
+        c = bayesian.Variable('c', 2)
+
+        domain = bayesian.Domain([a, b, c])
+        subdomain = bayesian.Domain([b, a])
+        
+        map = bayesian.map(subdomain, domain)
+
+        np.testing.assert_array_equal(
+            map, 
+            [0, 0, 2, 2, 1, 1, 3, 3])
+
+    def test_map_AB_ACB(self):
+
+        a = bayesian.Variable('a', 2)
+        b = bayesian.Variable('b', 2)
+        c = bayesian.Variable('c', 2)
+
+        domain = bayesian.Domain([a, c, b])
+        subdomain = bayesian.Domain([a, b])
+        
+        map = bayesian.map(subdomain, domain)
+
+        np.testing.assert_array_equal(
+            map, 
+            [0, 1, 0, 1, 2, 3, 2, 3])
+
+    def test_map_AB_BAC(self):
+
+        a = bayesian.Variable('a', 2)
+        b = bayesian.Variable('b', 2)
+        c = bayesian.Variable('c', 2)
+
+        domain = bayesian.Domain([b, a, c])
+        subdomain = bayesian.Domain([a, b])
+        
+        map = bayesian.map(subdomain, domain)
+
+        np.testing.assert_array_equal(
+            map, 
+            [0, 0, 2, 2, 1, 1, 3, 3])
+
+
+#    def test_map_AB_BCA(self):
+#
+#        a = bayesian.Variable('a', 2)
+#        b = bayesian.Variable('b', 2)
+#        c = bayesian.Variable('c', 2)
+#
+#        domain = bayesian.Domain([b, c, a])
+#        subdomain = bayesian.Domain([a, b])
+#        
+#        map = bayesian.map(subdomain, domain)
+#
+#        np.testing.assert_array_equal(
+#            map, 
+#            [0, 2, 0, 2, 1, 3, 1, 3])
+#
+#    def test_map_AB_CAB(self):
+#
+#        a = bayesian.Variable('a', 2)
+#        b = bayesian.Variable('b', 2)
+#        c = bayesian.Variable('c', 2)
+#
+#        domain = bayesian.Domain([c, a, b])
+#        subdomain = bayesian.Domain([a, b])
+#        
+#        map = bayesian.map(subdomain, domain)
+#
+#        np.testing.assert_array_equal(
+#            map, 
+#            [0, 1, 2, 3, 0, 1, 2, 3])
+#
+#    def test_map_AB_CBA(self):
+#
+#        a = bayesian.Variable('a', 2)
+#        b = bayesian.Variable('b', 2)
+#        c = bayesian.Variable('c', 2)
+#
+#        domain = bayesian.Domain([c, b, a])
+#        subdomain = bayesian.Domain([a, b])
+#        
+#        map = bayesian.map(subdomain, domain)
+#
+#        np.testing.assert_array_equal(
+#            map, 
+#            [0, 2, 1, 3, 0, 2, 1, 3])
+#
+#    def test_map_ABC_CBA(self):
+#
+#        a = bayesian.Variable('a', 2)
+#        b = bayesian.Variable('b', 2)
+#        c = bayesian.Variable('c', 2)
+#
+#        domain = bayesian.Domain([c, b, a])
+#        subdomain = bayesian.Domain([a, b, c])
+#        
+#        map = bayesian.map(subdomain, domain)
+#
+#        np.testing.assert_array_equal(
+#            map, 
+#            [0, 4, 2, 6, 1, 5, 3, 7])
+#
+#    def test_map_ACB_ABC(self):
+#
+#        a = bayesian.Variable('a', 2)
+#        b = bayesian.Variable('b', 2)
+#        c = bayesian.Variable('c', 2)
+#
+#        domain = bayesian.Domain([a, b, c])
+#        subdomain = bayesian.Domain([a, c, b])
+#        
+#        map = bayesian.map(subdomain, domain)
+#
+#        np.testing.assert_array_equal(
+#            map, 
+#            [0, 2, 1, 3, 4, 6, 5, 7])
+#
+#    def test_map_BAC_ABC(self):
+#
+#        a = bayesian.Variable('a', 2)
+#        b = bayesian.Variable('b', 2)
+#        c = bayesian.Variable('c', 2)
+#
+#        domain = bayesian.Domain([a, b, c])
+#        subdomain = bayesian.Domain([b, a, c])
+#        
+#        map = bayesian.map(subdomain, domain)
+#
+#        np.testing.assert_array_equal(
+#            map, 
+#            [0, 1, 4, 5, 2, 3, 6, 7])
+#
+#    def test_map_C_ABC(self):
+#
+#        a = bayesian.Variable('a', 2)
+#        b = bayesian.Variable('b', 2)
+#        c = bayesian.Variable('c', 2)
+#
+#        domain = bayesian.Domain([a, b, c])
+#        subdomain = bayesian.Domain([c])
+#        
+#        map = bayesian.map(subdomain, domain)
+#
+#        np.testing.assert_array_equal(
+#            map, 
+#            [0, 1, 0, 1, 0, 1, 0, 1])
+#
+#    def test_map_DACBEF_ABCDEF(self):
+#
+#        a = bayesian.Variable('a', 2)
+#        b = bayesian.Variable('b', 2)
+#        c = bayesian.Variable('c', 2)
+#        d = bayesian.Variable('d', 2)
+#        e = bayesian.Variable('e', 2)
+#        f = bayesian.Variable('f', 2)
+#
+#        domain = bayesian.Domain([a, b, c, d, e, f])
+#        subdomain = bayesian.Domain([d, a, c, b, e, f])
+#
+#        map = bayesian.map(subdomain, domain)
+#
+#        np.testing.assert_array_equal(
+#            map[:8], 
+#            [0, 1, 2, 3, 16, 17, 18, 19])
 
 
 class Domain(unittest.TestCase):
