@@ -26,20 +26,6 @@ def map(subdomain, domain):
 
     return subindices.transpose(new_order).ravel()
 
-def map2(subdomain, domain):
-    """Returns a map between two domains"""
-
-    subdomain_reordered = tuple(v for v in domain if v in subdomain)
-    suborder = tuple(subdomain_reordered.index(v) for v in subdomain)
-    subindices = np.arange(subdomain.size).reshape(subdomain.nb_states)
-    reordered_subindices = subindices.transpose(suborder).ravel()
-    new_shape = tuple(s if v in subdomain else 1
-                      for s, v in zip(domain.nb_states, domain))
-    reps = tuple(1 if v in subdomain else s
-                 for s, v in zip(domain.nb_states, domain))
-
-    return np.tile(reordered_subindices.reshape(new_shape), reps).ravel()
-
 
 class Domain(tuple):
 
