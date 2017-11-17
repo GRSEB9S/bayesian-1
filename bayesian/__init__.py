@@ -83,8 +83,14 @@ class Domain(tuple):
     def __ge__(self, other):
         return set(self) >= set(other)
 
+    def __gt__(self, other):
+        return set(self) > set(other)
+
     def __le__(self, other):
         return set(self) <= set(other)
+
+    def __lt__(self, other):
+        return set(self) < set(other)
 
     def __mul__(left, right):
         """Product of table domains
@@ -100,6 +106,9 @@ class Domain(tuple):
         unique = sorted(set(iterable), key=iterable.index)
 
         return Domain(unique)
+
+    def __ne__(self, other):
+        return set(self) != set(other)
 
     def __sub__(self, variable):
         """Substraction of a variable in the domain
