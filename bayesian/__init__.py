@@ -80,6 +80,9 @@ class Domain(tuple):
     def __eq__(self, other):
         return set(self) == set(other)
 
+    def __ge__(self, other):
+        return set(self) >= set(other)
+
     def __le__(self, other):
         return set(self) <= set(other)
 

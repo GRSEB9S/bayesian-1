@@ -272,6 +272,22 @@ class Domain(unittest.TestCase):
         self.assertFalse(bayesian.Domain((a, b)) == bayesian.Domain((c, a)))
         self.assertFalse(bayesian.Domain((a, b, c)) == bayesian.Domain((a, b)))
 
+    def test_ge(self):
+        """Test the __ge__ method"""
+
+        # A domain is greater than or equal to another if its variables
+        # are a superset of the other.
+        a = bayesian.Variable('a', 2)
+        b = bayesian.Variable('b', 2)
+        c = bayesian.Variable('c', 2)
+
+        self.assertTrue(bayesian.Domain((a, b, c)) >= bayesian.Domain((a, b)))
+        self.assertTrue(bayesian.Domain((a, b, c)) >= bayesian.Domain((c, a)))
+        self.assertTrue(bayesian.Domain((a, b, c)) >= bayesian.Domain((b,)))
+
+        self.assertFalse(bayesian.Domain((a, b)) >= bayesian.Domain((c,)))
+        self.assertFalse(bayesian.Domain((a, b)) >= bayesian.Domain((a, c)))
+
     def test_le(self):
         """Test the __le__ method"""
 
