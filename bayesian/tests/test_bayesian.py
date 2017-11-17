@@ -240,6 +240,7 @@ class Function(unittest.TestCase):
 
 
 class Domain(unittest.TestCase):
+    """Test the bayesian.Domain class"""
 
     def test_new(self):
         """Test the bayesian.Domain.__new__ method"""
@@ -256,6 +257,36 @@ class Domain(unittest.TestCase):
 
         # Empty domains are not permitted.
         self.assertRaises(ValueError, bayesian.Domain, [])
+
+    def test_eq(self):
+        """Test the __eq__ method"""
+
+        a = bayesian.Variable('a', 2)
+        b = bayesian.Variable('b', 2)
+        c = bayesian.Variable('c', 2)
+
+        self.assertTrue(bayesian.Domain((a, b)) == bayesian.Domain((a, b)))
+        self.assertTrue(bayesian.Domain((a, b)) == bayesian.Domain((b, a)))
+
+        self.assertFalse(bayesian.Domain((a,)) == bayesian.Domain((a, b)))
+        self.assertFalse(bayesian.Domain((a, b)) == bayesian.Domain((c, a)))
+        self.assertFalse(bayesian.Domain((a, b, c)) == bayesian.Domain((a, b)))
+
+    def test_le(self):
+        """Test the __le__ method"""
+
+        # A domain is less than or equal to another if its variables
+        # are a subset of the other.
+        a = bayesian.Variable('a', 2)
+        b = bayesian.Variable('b', 2)
+        c = bayesian.Variable('c', 2)
+
+        self.assertTrue(bayesian.Domain((a, b)) <= bayesian.Domain((a, b, c)))
+        self.assertTrue(bayesian.Domain((c, a)) <= bayesian.Domain((a, b, c)))
+        self.assertTrue(bayesian.Domain((b,)) <= bayesian.Domain((a, b, c)))
+
+        self.assertFalse(bayesian.Domain((c,)) <= bayesian.Domain((a, b)))
+        self.assertFalse(bayesian.Domain((a, c)) <= bayesian.Domain((a, b)))
 
     def test_mul(self):
         """Test the bayesian.Domain.__mul__ method"""

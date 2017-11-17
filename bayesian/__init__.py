@@ -77,6 +77,9 @@ class Domain(tuple):
         return (np.array(np.unravel_index(i, self.nb_states))
                 for i in range(self.size))
 
+    def __eq__(self, other):
+        return set(self) == set(other)
+
     def __le__(self, other):
         return set(self) <= set(other)
 
